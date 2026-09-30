@@ -1,6 +1,15 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Footer(){
+  const pathname = usePathname();
+
+  if (pathname && pathname.startsWith("/admin")) {
+    return null;
+  }
+
   return (<>
 <footer className="footer-ref">
 <div className="footer-overlay"></div>
@@ -33,15 +42,16 @@ export default function Footer(){
 <div className="footer-title">About Krishna Fashion</div>
 <Link href="/about-us">About Us</Link>
 <Link href="/management">Management</Link>
-<a href="#">Infrastructure</a>
+<Link href="/infrastructure">Infrastructure</Link>
 <Link href="/sustainability">Sustainability</Link>
 <Link href="/careers">Careers</Link>
-<a href="#">Contact Us</a>
+<Link href="/contact-us">Contact Us</Link>
+<Link href="/admin" style={{ color: "#3f953d", fontWeight: "600", display: "inline-block", marginTop: "6px" }}>Admin Portal ↗</Link>
 </div>
 </div>
 <div className="footer-bottom">
 <span>© 2026 KRISHNA FASHION. All Rights Reserved.</span>
-<span>Website developed by : <a href="https://setblue.com/" target="_blank">Setblue.com</a></span>
+<span><Link href="/admin" style={{ color: "#888", textDecoration: "none", marginRight: "14px" }}>Admin Login</Link> Website developed by : <a href="https://setblue.com/" target="_blank">Setblue.com</a></span>
 </div>
 </div>
 </footer>

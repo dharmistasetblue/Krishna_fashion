@@ -24,6 +24,10 @@ export default function SiteInteractions(){
     document.body.classList.remove("menu-open", "lightbox-open");
     document.querySelectorAll(".kf-lightbox").forEach(el => el.remove());
 
+    if (pathname && pathname.startsWith("/admin")) {
+      return;
+    }
+
     // management.css/style.css keep .reveal hidden until .show is added.
     // Re-create the original reveal behavior after every client-side route change.
     const revealEls = Array.from(document.querySelectorAll(".reveal"));

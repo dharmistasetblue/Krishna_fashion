@@ -1,0 +1,116 @@
+[
+  {
+    "id": "prod-1",
+    "name": "Polyester Interlock Dry-Fit",
+    "category": "circular",
+    "gsm": "140 - 220 GSM",
+    "width": "60 - 64 inches",
+    "composition": "100% Micro Polyester",
+    "applications": [
+      "Sportswear",
+      "Activewear",
+      "Athleisure"
+    ],
+    "description": "High-tenacity moisture wicking dry-fit fabric with superior soft handfeel and breathability.",
+    "status": "active",
+    "image": "/assets/images/products/circular/1.jpg",
+    "createdAt": "2026-09-15T10:00:00.000Z"
+  },
+  {
+    "id": "prod-2",
+    "name": "Single Jersey Spandex / Lycra",
+    "category": "circular",
+    "gsm": "160 - 240 GSM",
+    "width": "58 - 62 inches",
+    "composition": "92% Polyester, 8% Spandex",
+    "applications": [
+      "Fashion Apparel",
+      "Innerwear",
+      "Activewear"
+    ],
+    "description": "4-way high stretch single jersey with excellent shape retention and drape.",
+    "status": "active",
+    "image": "/assets/images/products/circular/2.jpg",
+    "createdAt": "2026-09-16T11:30:00.000Z"
+  },
+  {
+    "id": "prod-3",
+    "name": "Bird-Eye Mesh Active Knit",
+    "category": "circular",
+    "gsm": "130 - 180 GSM",
+    "width": "60 inches",
+    "composition": "100% Recycled Polyester",
+    "applications": [
+      "Sportswear",
+      "Performance Apparel"
+    ],
+    "description": "Classic sports eyelet mesh engineered for rapid sweat evaporation and ventilation.",
+    "status": "active",
+    "image": "/assets/images/products/circular/3.jpg",
+    "createdAt": "2026-09-17T09:15:00.000Z"
+  },
+  {
+    "id": "prod-4",
+    "name": "Polyester Jacquard Textured Knit",
+    "category": "circular",
+    "gsm": "180 - 260 GSM",
+    "width": "58 inches",
+    "composition": "100% Micro Polyester",
+    "applications": [
+      "Fashion Apparel",
+      "Loungewear"
+    ],
+    "description": "Rich self-patterned jacquard knit with dimensional surface texture and durable wash fastness.",
+    "status": "active",
+    "image": "/assets/images/products/circular/4.jpg",
+    "createdAt": "2026-09-18T14:20:00.000Z"
+  },
+  {
+    "id": "prod-5",
+    "name": "High-Gauge Tricot Dazzle Mesh",
+    "category": "warp",
+    "gsm": "110 - 170 GSM",
+    "width": "58 - 64 inches",
+    "composition": "100% Polyester Filament",
+    "applications": [
+      "Sportswear",
+      "Performance Apparel"
+    ],
+    "description": "Precision warp knit dazzle fabric with run-resistant lock-stitch construction.",
+    "status": "active",
+    "image": "/assets/images/products/warp/1.jpg",
+    "createdAt": "2026-09-19T08:45:00.000Z"
+  },
+  {
+    "id": "prod-6",
+    "name": "Super-Soft Warp Knit Brushed Fleece",
+    "category": "warp",
+    "gsm": "220 - 320 GSM",
+    "width": "60 inches",
+    "composition": "100% Polyester",
+    "applications": [
+      "Loungewear",
+      "Specialised Textile"
+    ],
+    "description": "Thermally insulating warp knitted plush fabric with single/double-side peach brush finish.",
+    "status": "active",
+    "image": "/assets/images/products/warp/2.jpg",
+    "createdAt": "2026-09-20T13:00:00.000Z"
+  },
+  {
+    "id": "prod-7",
+    "name": "High-Tension Warp Elastic Power Net",
+    "category": "warp",
+    "gsm": "150 - 250 GSM",
+    "width": "54 - 60 inches",
+    "composition": "85% Polyester, 15% Elastane",
+    "applications": [
+      "Innerwear",
+      "Performance Apparel"
+    ],
+    "description": "Heavy compression mesh with extreme lateral recovery and warp stability.",
+    "status": "active",
+    "image": "/assets/images/products/warp/3.jpg",
+    "createdAt": "2026-09-21T16:10:00.000Z"
+  }
+]

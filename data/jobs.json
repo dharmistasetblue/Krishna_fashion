@@ -1,0 +1,32 @@
+[
+  {
+    "id": "job-1",
+    "title": "Senior Circular Knitting Machine Technician",
+    "department": "Production & Operations",
+    "location": "Karanj Plant 01, Surat",
+    "experience": "4-7 Years",
+    "type": "Full-Time",
+    "status": "active",
+    "description": "Expertise in Mayer & Cie / Terrot / Fukuhara circular knitting machines, tension adjustment, cam setup and troubleshooting."
+  },
+  {
+    "id": "job-2",
+    "title": "Quality Assurance & Lab Inspector",
+    "department": "Quality",
+    "location": "Surat",
+    "experience": "2-5 Years",
+    "type": "Full-Time",
+    "status": "active",
+    "description": "Testing GSM, elongation, color fastness, shrinkage and maintaining 4-point fabric inspection standards."
+  },
+  {
+    "id": "job-3",
+    "title": "Technical Textile Sales Executive",
+    "department": "Sales & Customer Relations",
+    "location": "Ring Road Office, Surat",
+    "experience": "3-6 Years",
+    "type": "Full-Time",
+    "status": "active",
+    "description": "Generating domestic B2B orders for warp & circular knitted fabrics among sportswear and garment brands."
+  }
+]

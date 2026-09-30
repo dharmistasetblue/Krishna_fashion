@@ -37,6 +37,10 @@ export default function Header(){
     };
   }, [menuOpen]);
 
+  if (pathname && pathname.startsWith("/admin")) {
+    return null;
+  }
+
   return (<>
     <header>
       <div className="container nav">

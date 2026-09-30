@@ -1,11 +1,54 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 
 export default function ContactUsPage(){
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    inquiryType: "Product Inquiry",
+    message: ""
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setResult(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResult({ success: true, message: data.message || "Enquiry sent successfully!" });
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          inquiryType: "Product Inquiry",
+          message: ""
+        });
+      } else {
+        setResult({ success: false, message: data.error || "Failed to submit enquiry. Please check your details." });
+      }
+    } catch {
+      setResult({ success: false, message: "Unable to connect to server. Please call or WhatsApp us directly." });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (<>
 
 <div className="scroll-progress" id="scrollProgress"></div>
 
-<section className="inner-hero" style={{backgroundImage: "url(assets/images/contact-banner.jpg)"}}>
+<section className="inner-hero" style={{backgroundImage: "url(/assets/images/contact-banner.jpg)"}}>
 <div className="inner-hero-overlay"></div>
 <div className="container inner-hero-content" data-animate="up">
 <div className="kicker">Let’s start a conversation.</div>
@@ -80,19 +123,33 @@ export default function ContactUsPage(){
                         manufacturing capabilities or business enquiries.
                     </p>
 </div>
-<form>
-<label>Your Name<input type="text" placeholder="Enter your name" /></label>
+<form onSubmit={handleSubmit}>
+{result && (
+  <div style={{
+    padding: "12px 16px",
+    borderRadius: "8px",
+    marginBottom: "16px",
+    background: result.success ? "rgba(21, 147, 58, 0.15)" : "rgba(220, 38, 38, 0.15)",
+    border: `1px solid ${result.success ? "#15933a" : "#dc2626"}`,
+    color: result.success ? "#15933a" : "#dc2626",
+    fontSize: "14px",
+    fontWeight: "500"
+  }}>
+    <i className={result.success ? "fa-solid fa-circle-check" : "fa-solid fa-triangle-exclamation"} style={{ marginRight: "8px" }}></i>
+    {result.message}
+  </div>
+)}
+<label>Your Name *<input type="text" required placeholder="Enter your name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /></label>
 <div className="two">
-<label>Email Address<input type="email" placeholder="name@company.com" /></label><label>Phone Number<input type="tel" placeholder="+91" /></label>
+<label>Email Address<input type="email" placeholder="name@company.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></label><label>Phone Number *<input type="tel" required placeholder="+91" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} /></label>
 </div>
-<label>Inquiry Type<select>
-<option>Select inquiry type</option>
-<option>Product Inquiry</option>
-<option>Manufacturing Inquiry</option>
-<option>Business Inquiry</option>
-<option>Career</option>
-<option>Other</option>
-</select></label><label>Your Message<textarea rows="5" placeholder="Tell us about your requirement..."></textarea></label><button type="button">SEND ENQUIRY <span>↗</span></button>
+<label>Inquiry Type<select value={formData.inquiryType} onChange={(e) => setFormData({ ...formData, inquiryType: e.target.value })}>
+<option value="Product Inquiry">Product Inquiry</option>
+<option value="Manufacturing Inquiry">Manufacturing Inquiry</option>
+<option value="Business Inquiry">Business Inquiry</option>
+<option value="Career">Career</option>
+<option value="Other">Other</option>
+</select></label><label>Your Message<textarea rows="5" placeholder="Tell us about your requirement..." value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })}></textarea></label><button type="submit" disabled={submitting}>{submitting ? "SENDING..." : "SEND ENQUIRY"} <span>↗</span></button>
 </form>
 </div>
 </section>

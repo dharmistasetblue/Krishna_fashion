@@ -1,0 +1,24 @@
+[
+  {
+    "id": "app-201",
+    "name": "Anand Verma",
+    "email": "anand.verma.textile@gmail.com",
+    "phone": "+91 94280 77312",
+    "areaOfInterest": "Production & Operations",
+    "message": "Diploma in Textile Technology with 5 years experience managing high-speed circular knitting lines at leading textile mills in Surat.",
+    "status": "under_review",
+    "notes": "Strong machine experience.",
+    "createdAt": "2026-09-26T15:30:00.000Z"
+  },
+  {
+    "id": "app-202",
+    "name": "Pooja Trivedi",
+    "email": "pooja.trivedi.qa@outlook.com",
+    "phone": "+91 97245 88910",
+    "areaOfInterest": "Quality",
+    "message": "B.Tech in Textile Chemistry. Experienced in knitted fabric testing, shade matching and AQL defect analysis.",
+    "status": "interview_scheduled",
+    "notes": "Interview scheduled for Tuesday.",
+    "createdAt": "2026-09-24T10:15:00.000Z"
+  }
+]

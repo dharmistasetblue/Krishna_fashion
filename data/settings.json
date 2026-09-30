@@ -1,0 +1,24 @@
+{
+  "companyName": "Krishna Fashion",
+  "tagline": "Your trusted partner for dependable knitted fabric solutions",
+  "establishedYear": "2014",
+  "dailyCapacity": "~70 MT",
+  "knittingMachines": "400+",
+  "office": {
+    "address": "B-306, International Commerce Centre (ICC Building), Nr. Kadiwala School, Opp. Civil Hospital, Ring Road, Surat – 395002, Gujarat, India",
+    "phone1": "+91 89809 82777",
+    "contact1": "Himanshu Mittal",
+    "phone2": "+91 99586 35125",
+    "contact2": "Keshav Choudhary",
+    "email": "info@krishnafashion.co",
+    "whatsapp": "+918980982777"
+  },
+  "plant1": {
+    "title": "Plant 01 (Circular Knitting)",
+    "address": "P. No. 1 to 3, B. No. 96, Varethi Gam Road, Nr. Moulwand Patia, Vill. Karanj, Dist. Surat, Gujarat, India"
+  },
+  "plant2": {
+    "title": "Plant 02 (Warp Knitting)",
+    "address": "P. No. 9 to 18, B. No. 95, Varethi Gam Road, Nr. Molvand Patia, Vill. Karanj, Tal. Mandvi, Dist. Surat, Gujarat, India"
+  }
+}

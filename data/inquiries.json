@@ -1,0 +1,46 @@
+[
+  {
+    "id": "inq-1790757321818",
+    "name": "Chintan Shah",
+    "email": "chintan@textiles.in",
+    "phone": "+919876543210",
+    "inquiryType": "Product Inquiry",
+    "message": "Looking for 10,000 meters of Circular Dry-Fit fabric.",
+    "status": "new",
+    "notes": "",
+    "createdAt": "2026-09-30T08:35:21.818Z"
+  },
+  {
+    "id": "inq-101",
+    "name": "Rajesh Singhania",
+    "email": "rajesh@sportstyleindia.com",
+    "phone": "+91 98251 44520",
+    "inquiryType": "Product Inquiry",
+    "message": "We need 5,000 meters of 180 GSM dry-fit interlock fabric for our upcoming summer sportswear collection. Please share sample swatches and bulk pricing.",
+    "status": "new",
+    "notes": "",
+    "createdAt": "2026-09-28T09:20:00.000Z"
+  },
+  {
+    "id": "inq-102",
+    "name": "Meera Patel",
+    "email": "procurement@vibrantexports.co",
+    "phone": "+91 98790 12345",
+    "inquiryType": "Manufacturing Inquiry",
+    "message": "Looking for contract manufacturing partnership for continuous supply of Warp Tricot fabric (approx 15 MT monthly). Please connect for plant visit.",
+    "status": "in_progress",
+    "notes": "Followed up on call. Requested specification sheet.",
+    "createdAt": "2026-09-27T14:40:00.000Z"
+  },
+  {
+    "id": "inq-103",
+    "name": "Vikram Malhotra",
+    "email": "vikram@athleisuregear.in",
+    "phone": "+91 98111 87654",
+    "inquiryType": "Business Inquiry",
+    "message": "Enquiring about customized jacquard patterns and minimum order quantities for activewear fabrics.",
+    "status": "contacted",
+    "notes": "Catalog and MOQ terms emailed.",
+    "createdAt": "2026-09-25T11:10:00.000Z"
+  }
+]

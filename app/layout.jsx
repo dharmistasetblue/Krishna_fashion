@@ -3,7 +3,14 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import SiteInteractions from "../components/SiteInteractions";
 
-export const metadata={title:"Krishna Fashion"};
+export const metadata = {
+  title: "Krishna Fashion",
+  description: "Surat-based textile manufacturing enterprise specialising in high-quality polyester-based circular and warp knitted fabrics.",
+  openGraph: {
+    title: "Krishna Fashion",
+    description: "Surat-based textile manufacturing enterprise specialising in high-quality polyester-based circular and warp knitted fabrics.",
+  },
+};
 export default function RootLayout({children}){
  return <html lang="en"><head>
   <link rel="preconnect" href="https://fonts.googleapis.com" />

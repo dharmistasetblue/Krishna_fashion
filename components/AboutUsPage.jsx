@@ -5,7 +5,7 @@ export default function AboutUsPage(){
 
 <div className="scroll-progress" id="scrollProgress"></div>
 
-<section className="inner-hero only-about-text" style={{backgroundImage: "url(assets/images/about-us.jpg)"}}>
+<section className="inner-hero only-about-text" style={{backgroundImage: "url(/assets/images/about-us.jpg)"}}>
 <div className="inner-hero-overlay"></div>
 <div className="container inner-hero-content" data-animate="up">
 <div className="kicker">Who We Are</div>

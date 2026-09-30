@@ -1,0 +1,8 @@
+{
+  "name": "Krishna Fashion",
+  "description": "Surat-based textile manufacturing enterprise specialising in high-quality polyester-based circular and warp knitted fabrics.",
+  "requestFramePermissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
