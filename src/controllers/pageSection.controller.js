@@ -5,6 +5,21 @@ import { successResponse, errorResponse } from "../utils/response.js";
 import { STATUS_CODES } from "../config/constants.js";
 
 export class PageSectionController {
+  static async list(req) {
+    try {
+      const { searchParams } = new URL(req.url);
+      const pageId = searchParams.get("pageId");
+      if (pageId) {
+        const sections = await PageSectionService.getSectionsByPage(pageId);
+        return successResponse(sections, "Page sections fetched successfully.");
+      }
+      const all = await PageSectionService.getSectionsByPage("");
+      return successResponse(all, "Page sections fetched successfully.");
+    } catch (err) {
+      return errorResponse(err.message, STATUS_CODES.INTERNAL_ERROR);
+    }
+  }
+
   static async create(req) {
     try {
       const body = await req.json();

@@ -1,0 +1,22 @@
+[
+  {
+    "_id": "db6cd0c786e078b905d3cc05",
+    "name": "Krishna Fashion Admin",
+    "email": "admin@krishnafashion.co",
+    "passwordHash": "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9",
+    "role": "superadmin",
+    "isDeleted": false,
+    "createdAt": "2026-09-30T09:50:10.299Z",
+    "updatedAt": "2026-09-30T09:50:10.299Z"
+  },
+  {
+    "_id": "user_nikunj_admin",
+    "name": "Nikunj Hapani",
+    "email": "nikunj.hapani7035@gmail.com",
+    "passwordHash": "3eea0fcd35c9850ef91857c4662082e06dd0aa24b4689850f40a37ff982189ef",
+    "role": "superadmin",
+    "isDeleted": false,
+    "createdAt": "2026-09-30T10:30:15.278Z",
+    "updatedAt": "2026-09-30T10:30:15.279Z"
+  }
+]

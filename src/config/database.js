@@ -147,7 +147,13 @@ export const MediaModel = new BaseRepository("media");
 export async function seedDatabaseIfEmpty() {
   const usersCount = await UserModel.count();
   if (usersCount === 0) {
-    // 1. Seed Admin User
+    // 1. Seed Admin Users
+    await UserModel.create({
+      name: "Nikunj Hapani",
+      email: "nikunj.hapani7035@gmail.com",
+      passwordHash: crypto.createHash("sha256").update("Nikunj@123").digest("hex"),
+      role: "superadmin"
+    });
     await UserModel.create({
       name: "Krishna Fashion Admin",
       email: "admin@krishnafashion.co",
