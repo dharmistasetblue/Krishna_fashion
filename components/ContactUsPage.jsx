@@ -11,6 +11,36 @@ export default function ContactUsPage(){
     inquiryType: "Product Inquiry",
     message: ""
   });
+  const [selectedLocation, setSelectedLocation] = useState("office");
+
+  const locations = {
+    office: {
+      name: "Corporate Head Office",
+      address: "B-306, International Commerce Centre (ICC Building), Ring Road, Surat – 395002, Gujarat, India",
+      phone: "+91 89809 82777 / +91 99586 35125",
+      timing: "Mon - Sat: 9:30 AM - 7:30 PM",
+      mapUrl: "https://www.google.com/maps?q=International%20Commerce%20Centre%20Ring%20Road%20Surat%20395002&output=embed",
+      directUrl: "https://www.google.com/maps/search/?api=1&query=International+Commerce+Centre+Ring+Road+Surat+395002"
+    },
+    plant1: {
+      name: "Plant 01 (Circular Knitting Facility)",
+      address: "P. No. 1 to 3, B. No. 96, Varethi Gam Road, Nr. Moulwand Patia, Vill. Karanj, Dist. Surat, Gujarat, India",
+      phone: "+91 89809 82777",
+      timing: "24/7 Manufacturing Operations",
+      mapUrl: "https://www.google.com/maps?q=Varethi+Gam+Road+Karanj+Surat+Gujarat&output=embed",
+      directUrl: "https://www.google.com/maps/search/?api=1&query=Varethi+Gam+Road+Karanj+Surat+Gujarat"
+    },
+    plant2: {
+      name: "Plant 02 (Warp Knitting Facility)",
+      address: "P. No. 9 to 18, B. No. 95, Varethi Gam Road, Nr. Molvand Patia, Vill. Karanj, Tal. Mandvi, Dist. Surat, Gujarat, India",
+      phone: "+91 89809 82777",
+      timing: "24/7 Manufacturing Operations",
+      mapUrl: "https://www.google.com/maps?q=Mandvi+Surat+Gujarat+India&output=embed",
+      directUrl: "https://www.google.com/maps/search/?api=1&query=Varethi+Gam+Road+Karanj+Tal+Mandvi+Surat+Gujarat"
+    }
+  };
+
+  const activeLoc = locations[selectedLocation];
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -110,8 +140,111 @@ export default function ContactUsPage(){
 </div>
 </div>
 </section>
-<section className="map">
-<iframe src="https://www.google.com/maps?q=International%20Commerce%20Centre%20Ring%20Road%20Surat%20395002&amp;output=embed" loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Krishna Fashion office map"></iframe>
+<section className="map" style={{ padding: "40px 0 60px", background: "#f8fafc" }}>
+  <div className="container">
+    <div style={{ textAlign: "center", marginBottom: "24px" }}>
+      <div className="kicker" style={{ color: "#2c9242", marginBottom: "8px" }}>LOCATE US</div>
+      <h2 style={{ fontSize: "32px", margin: "0 0 12px 0" }}>Visit Our Offices & Manufacturing Plants</h2>
+      <p style={{ maxWidth: "600px", margin: "0 auto 20px auto", color: "#64748b", fontSize: "15px" }}>
+        Strategically situated in Surat, India's textile capital, with direct highway connectivity.
+      </p>
+
+      {/* Location Switcher Buttons */}
+      <div style={{ display: "inline-flex", background: "#e2e8f0", padding: "4px", borderRadius: "10px", gap: "6px", flexWrap: "wrap", justifyContent: "center" }}>
+        <button
+          type="button"
+          onClick={() => setSelectedLocation("office")}
+          style={{
+            padding: "8px 18px",
+            borderRadius: "8px",
+            border: "none",
+            background: selectedLocation === "office" ? "#15933a" : "transparent",
+            color: selectedLocation === "office" ? "#fff" : "#475569",
+            fontWeight: "600",
+            fontSize: "13px",
+            cursor: "pointer",
+            transition: "all 0.2s"
+          }}
+        >
+          📍 Surat Head Office (ICC)
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedLocation("plant1")}
+          style={{
+            padding: "8px 18px",
+            borderRadius: "8px",
+            border: "none",
+            background: selectedLocation === "plant1" ? "#15933a" : "transparent",
+            color: selectedLocation === "plant1" ? "#fff" : "#475569",
+            fontWeight: "600",
+            fontSize: "13px",
+            cursor: "pointer",
+            transition: "all 0.2s"
+          }}
+        >
+          🏭 Plant 01 (Circular Knitting)
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedLocation("plant2")}
+          style={{
+            padding: "8px 18px",
+            borderRadius: "8px",
+            border: "none",
+            background: selectedLocation === "plant2" ? "#15933a" : "transparent",
+            color: selectedLocation === "plant2" ? "#fff" : "#475569",
+            fontWeight: "600",
+            fontSize: "13px",
+            cursor: "pointer",
+            transition: "all 0.2s"
+          }}
+        >
+          🏭 Plant 02 (Warp Knitting)
+        </button>
+      </div>
+    </div>
+
+    {/* Map Container & Address Card */}
+    <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "16px", borderRadius: "16px", overflow: "hidden", boxShadow: "0 10px 25px -5px rgba(0,0,0,0.08)", background: "#fff", border: "1px solid #e2e8f0" }}>
+      <div style={{ position: "relative", width: "100%", height: "480px" }}>
+        <iframe
+          src={activeLoc.mapUrl}
+          style={{ width: "100%", height: "100%", border: 0 }}
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          title={activeLoc.name}
+        />
+        <div style={{
+          position: "absolute",
+          bottom: "16px",
+          left: "16px",
+          right: "16px",
+          maxWidth: "480px",
+          background: "rgba(255, 255, 255, 0.95)",
+          backdropFilter: "blur(8px)",
+          padding: "16px 20px",
+          borderRadius: "12px",
+          boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
+          border: "1px solid #cbd5e1"
+        }}>
+          <h4 style={{ margin: "0 0 4px 0", fontSize: "16px", color: "#0f172a", fontWeight: "700" }}>{activeLoc.name}</h4>
+          <p style={{ margin: "0 0 8px 0", fontSize: "13px", color: "#475569", lineHeight: "1.4" }}>{activeLoc.address}</p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", fontSize: "12px" }}>
+            <span style={{ color: "#15933a", fontWeight: "600" }}>📞 {activeLoc.phone}</span>
+            <a
+              href={activeLoc.directUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{ background: "#15933a", color: "#fff", padding: "6px 12px", borderRadius: "6px", textDecoration: "none", fontWeight: "600", fontSize: "12px" }}
+            >
+              Get Directions ↗
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </section>
 <section className="enquiry" id="form">
 <div className="container enquiry-grid">

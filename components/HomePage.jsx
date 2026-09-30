@@ -1,6 +1,65 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function HomePage(){
+  const [settings, setSettings] = useState(null);
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+
+  // Enquiry form state
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    inquiryType: "Product Inquiry",
+    message: ""
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then(res => res.json())
+      .then(data => { if (data.settings) setSettings(data.settings); })
+      .catch(() => {});
+
+    fetch("/api/products")
+      .then(res => res.json())
+      .then(data => { if (data.products) setFeaturedProducts(data.products.slice(0, 6)); })
+      .catch(() => {});
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setResult(null);
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResult({ success: true, message: data.message || "Enquiry sent successfully! Our sales team will get in touch shortly." });
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          inquiryType: "Product Inquiry",
+          message: ""
+        });
+      } else {
+        setResult({ success: false, message: data.error || "Failed to submit enquiry." });
+      }
+    } catch {
+      setResult({ success: false, message: "Server connection error. Please call or WhatsApp us." });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (<>
 
 <div className="scroll-progress" id="scrollProgress"></div>
@@ -31,9 +90,9 @@ Our manufacturing operations are supported by strategically located production f
 </div>
 </div>
 <div className="metrics" data-animate="up">
-<div className="metric"><strong>400+</strong><span>Knitting Machines</span></div>
-<div className="metric"><strong>~70 MT</strong><span>Daily Capacity</span></div>
-<div className="metric"><strong>CIRCULAR & WARP</strong><span>Knitting</span></div>
+<div className="metric"><strong>{settings?.knittingMachines || "400+"}</strong><span>Knitting Machines</span></div>
+<div className="metric"><strong>{settings?.dailyCapacity || "~70 MT"}</strong><span>Daily Capacity</span></div>
+<div className="metric"><strong>CIRCULAR & WARP</strong><span>Knitting Facilities</span></div>
 </div>
 </div>
 </section>
@@ -192,29 +251,95 @@ Our objective is to develop long-term relationships with international buyers, g
 <Link href="/sustainability" className="btn btn-dark">Explore Sustainability ↗</Link>
 </div>
 </section>
+{featuredProducts.length > 0 && (
+  <section style={{ padding: "60px 0 30px 0", background: "#f8fafc" }}>
+    <div className="container">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "28px", flexWrap: "wrap", gap: "14px" }}>
+        <div>
+          <div className="kicker" style={{ color: "#2c9242", marginBottom: "8px" }}>LIVE FABRIC SPECIFICATIONS</div>
+          <h2 style={{ margin: 0, fontSize: "32px", color: "#0f172a" }}>Featured Knitted Fabrics</h2>
+        </div>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <Link href="/circular-knitting" style={{ fontSize: "13px", fontWeight: "600", color: "#15933a", textDecoration: "none", background: "#e8f5e9", padding: "8px 14px", borderRadius: "6px" }}>
+            Circular Knit Catalog →
+          </Link>
+          <Link href="/warp-knitting" style={{ fontSize: "13px", fontWeight: "600", color: "#2563eb", textDecoration: "none", background: "#eff6ff", padding: "8px 14px", borderRadius: "6px" }}>
+            Warp Knit Catalog →
+          </Link>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
+        {featuredProducts.map(prod => (
+          <div key={prod.id} style={{ background: "#fff", borderRadius: "12px", border: "1px solid #e2e8f0", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            <div style={{ height: "180px", position: "relative", background: "#f1f5f9" }}>
+              <img src={prod.image || "/assets/images/products/circular/1.jpg"} alt={prod.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              <span style={{ position: "absolute", top: "10px", left: "10px", background: prod.category === "circular" ? "#15933a" : "#2563eb", color: "#fff", fontSize: "11px", fontWeight: "700", padding: "3px 8px", borderRadius: "4px", textTransform: "uppercase" }}>
+                {prod.category === "circular" ? "Circular" : "Warp"}
+              </span>
+            </div>
+            <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div>
+                <h4 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#0f172a", fontWeight: "700" }}>{prod.name}</h4>
+                <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "8px" }}>
+                  <strong>{prod.gsm}</strong> · {prod.width}
+                </div>
+                <div style={{ fontSize: "12px", color: "#334155", marginBottom: "12px" }}>
+                  {prod.composition}
+                </div>
+              </div>
+              <a
+                href="#form"
+                onClick={() => setFormData(prev => ({ ...prev, inquiryType: "Product Inquiry", message: `Inquiring about ${prod.name} (${prod.gsm}). Please share bulk pricing.` }))}
+                style={{ display: "block", textAlign: "center", background: "#0f172a", color: "#fff", padding: "8px", borderRadius: "6px", fontSize: "12px", fontWeight: "600", textDecoration: "none" }}
+              >
+                Inquire Fabric ↗
+              </a>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+)}
+
 <section className="enquiry" id="form">
 <div className="container enquiry-grid">
 <div>
 <div className="kicker" style={{color: "#2c9242"}}>Start a Conversation</div>
 <h2>To manufacture better. To grow together.</h2>
 <p>
-                        Share your requirement and contact details. Our team can connect with you regarding products,
-                        manufacturing capabilities or business enquiries.
-                    </p>
+    Share your requirement and contact details. Our team can connect with you regarding products,
+    manufacturing capabilities or business enquiries.
+</p>
 </div>
-<form>
-<label>Your Name<input type="text" placeholder="Enter your name" /></label>
+<form onSubmit={handleSubmit}>
+{result && (
+  <div style={{
+    padding: "12px 16px",
+    borderRadius: "8px",
+    marginBottom: "16px",
+    background: result.success ? "rgba(21, 147, 58, 0.15)" : "rgba(220, 38, 38, 0.15)",
+    border: `1px solid ${result.success ? "#15933a" : "#dc2626"}`,
+    color: result.success ? "#15933a" : "#dc2626",
+    fontSize: "14px",
+    fontWeight: "500"
+  }}>
+    <i className={result.success ? "fa-solid fa-circle-check" : "fa-solid fa-triangle-exclamation"} style={{ marginRight: "8px" }}></i>
+    {result.message}
+  </div>
+)}
+<label>Your Name *<input type="text" required placeholder="Enter your name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /></label>
 <div className="two">
-<label>Email Address<input type="email" placeholder="name@company.com" /></label><label>Phone Number<input type="tel" placeholder="+91" /></label>
+<label>Email Address<input type="email" placeholder="name@company.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></label><label>Phone Number *<input type="tel" required placeholder="+91" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} /></label>
 </div>
-<label>Inquiry Type<select>
-<option>Select inquiry type</option>
-<option>Product Inquiry</option>
-<option>Manufacturing Inquiry</option>
-<option>Business Inquiry</option>
-<option>Career</option>
-<option>Other</option>
-</select></label><label>Your Message<textarea rows="5" placeholder="Tell us about your requirement..."></textarea></label><button type="button">SEND ENQUIRY <span>↗</span></button>
+<label>Inquiry Type<select value={formData.inquiryType} onChange={(e) => setFormData({ ...formData, inquiryType: e.target.value })}>
+<option value="Product Inquiry">Product Inquiry</option>
+<option value="Manufacturing Inquiry">Manufacturing Inquiry</option>
+<option value="Business Inquiry">Business Inquiry</option>
+<option value="Career">Career</option>
+<option value="Other">Other</option>
+</select></label><label>Your Message<textarea rows="5" placeholder="Tell us about your requirement..." value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })}></textarea></label><button type="submit" disabled={submitting}>{submitting ? "SENDING..." : "SEND ENQUIRY"} <span>↗</span></button>
 </form>
 </div>
 </section>
