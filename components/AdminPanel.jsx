@@ -14,75 +14,99 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState("");
   const [loginSubmitting, setLoginSubmitting] = useState(false);
 
-  // Active navigation tab (Wix sidebar)
-  const [activeTab, setActiveTab] = useState("overview"); 
-  // tabs: overview, products, inquiries, careers, plants, site_cms, security
+  // Active navigation tab (Wix-style CMS sidebar)
+  // tabs: overview, menu_builder, page_builder, cms_blocks, modules, banners, products, inquiries, security
+  const [activeTab, setActiveTab] = useState("page_builder");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [toast, setToast] = useState(null);
-  const [globalSearch, setGlobalSearch] = useState("");
-
-  // Data states
-  const [stats, setStats] = useState(null);
-  const [inquiries, setInquiries] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [careers, setCareers] = useState([]);
-  const [jobs, setJobs] = useState([]);
-  const [settings, setSettings] = useState(null);
   const [loadingData, setLoadingData] = useState(false);
 
-  // Inquiries filters & modals
-  const [inquirySearch, setInquirySearch] = useState("");
-  const [inquiryStatusFilter, setInquiryStatusFilter] = useState("all");
-  const [selectedInquiry, setSelectedInquiry] = useState(null);
-  const [inquiryNote, setInquiryNote] = useState("");
+  // Collections state
+  const [menuTree, setMenuTree] = useState([]);
+  const [pages, setPages] = useState([]);
+  const [cmsList, setCmsList] = useState([]);
+  const [moduleList, setModuleList] = useState([]);
+  const [bannerList, setBannerList] = useState([]);
+  const [inquiries, setInquiries] = useState([]);
+  const [products, setProducts] = useState([]);
 
-  // Product modal state
-  const [productModalOpen, setProductModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [productCategoryFilter, setProductCategoryFilter] = useState("all");
-  const [productForm, setProductForm] = useState({
-    name: "",
-    category: "circular",
-    gsm: "160 - 220 GSM",
-    width: "60 inches",
-    composition: "100% Polyester",
-    applications: "Sportswear, Activewear, Athleisure",
-    description: "",
-    image: "/assets/images/products/circular/1.jpg",
-    status: "active"
-  });
-
-  // Preset fabric swatches
-  const presetSwatches = [
-    "/assets/images/products/circular/1.jpg",
-    "/assets/images/products/circular/2.jpg",
-    "/assets/images/products/circular/3.jpg",
-    "/assets/images/products/circular/4.jpg",
-    "/assets/images/products/warp/1.jpg",
-    "/assets/images/products/warp/2.jpg",
-    "/assets/images/products/warp/3.jpg",
-    "/assets/images/products/warp/4.jpg",
-  ];
-
-  // Job modal state
-  const [jobModalOpen, setJobModalOpen] = useState(false);
-  const [editingJob, setEditingJob] = useState(null);
-  const [jobForm, setJobForm] = useState({
+  // PAGE BUILDER STATE
+  const [selectedPage, setSelectedPage] = useState(null);
+  const [pageSections, setPageSections] = useState([]);
+  const [pageModalOpen, setPageModalOpen] = useState(false);
+  const [pageForm, setPageForm] = useState({ title: "", slug: "", description: "", metaTitle: "", metaDescription: "" });
+  const [sectionModalOpen, setSectionModalOpen] = useState(false);
+  const [editingSection, setEditingSection] = useState(null);
+  const [sectionForm, setSectionForm] = useState({
+    type: "cms",
+    cmsId: "",
+    moduleId: "",
     title: "",
-    department: "Production & Operations",
-    location: "Surat",
-    experience: "2-5 Years",
-    type: "Full-Time",
-    status: "active",
-    description: ""
+    subtitle: "",
+    backgroundImage: "",
+    position: 1,
+    isActive: true
   });
 
-  // Settings & CMS form
-  const [settingsForm, setSettingsForm] = useState(null);
+  // MENU BUILDER STATE
+  const [menuModalOpen, setMenuModalOpen] = useState(false);
+  const [editingMenu, setEditingMenu] = useState(null);
+  const [menuForm, setMenuForm] = useState({
+    name: "",
+    slug: "",
+    type: "page",
+    pageId: "",
+    url: "",
+    parentId: "",
+    position: 1,
+    isActive: true
+  });
+
+  // CMS BLOCK STATE
+  const [cmsModalOpen, setCmsModalOpen] = useState(false);
+  const [editingCms, setEditingCms] = useState(null);
+  const [cmsForm, setCmsForm] = useState({
+    title: "",
+    slug: "",
+    description: "",
+    content: "",
+    image: "/assets/images/about-intro.jpg",
+    isActive: true
+  });
+
+  // MODULE STATE
+  const [moduleModalOpen, setModuleModalOpen] = useState(false);
+  const [editingModule, setEditingModule] = useState(null);
+  const [moduleForm, setModuleForm] = useState({
+    name: "",
+    slug: "",
+    type: "product",
+    title: "",
+    subtitle: "",
+    configurationText: "{}",
+    isActive: true
+  });
+
+  // BANNER STATE
+  const [bannerModalOpen, setBannerModalOpen] = useState(false);
+  const [editingBanner, setEditingBanner] = useState(null);
+  const [bannerForm, setBannerForm] = useState({
+    title: "",
+    subtitle: "",
+    menuId: "",
+    pageId: "",
+    desktopImage: "/assets/images/video-bg.jpg",
+    mobileImage: "",
+    buttonText: "Learn More",
+    buttonUrl: "/about-us",
+    position: 1,
+    isActive: true
+  });
+
+  // Security
   const [pwdCurrent, setPwdCurrent] = useState("");
   const [pwdNew, setPwdNew] = useState("");
   const [pwdConfirm, setPwdConfirm] = useState("");
-  const [pwdLoading, setPwdLoading] = useState(false);
 
   const showToastMsg = (msg, type = "success") => {
     setToast({ msg, type });
@@ -113,29 +137,48 @@ export default function AdminPanel() {
   const loadAllData = async () => {
     setLoadingData(true);
     try {
-      const [resStats, resInq, resProd, resCar, resJobs, resSet] = await Promise.all([
-        fetch("/api/stats").then(r => r.json()),
+      const [resTree, resPages, resCMS, resMods, resBanners, resInq, resProd] = await Promise.all([
+        fetch("/api/menu/tree").then(r => r.json()),
+        fetch("/api/page/list").then(r => r.json()),
+        fetch("/api/cms/list").then(r => r.json()),
+        fetch("/api/module/list").then(r => r.json()),
+        fetch("/api/banner/list").then(r => r.json()),
         fetch("/api/inquiries").then(r => r.json()),
-        fetch("/api/products?all=true").then(r => r.json()),
-        fetch("/api/careers").then(r => r.json()),
-        fetch("/api/jobs").then(r => r.json()),
-        fetch("/api/settings").then(r => r.json())
+        fetch("/api/products?all=true").then(r => r.json())
       ]);
 
-      if (resStats.stats) setStats(resStats.stats);
+      if (resTree.data) setMenuTree(resTree.data);
+      if (resPages.data) {
+        setPages(resPages.data);
+        if (!selectedPage && resPages.data.length > 0) {
+          selectPageForBuilder(resPages.data[0]);
+        }
+      }
+      if (resCMS.data) setCmsList(resCMS.data);
+      if (resMods.data) setModuleList(resMods.data);
+      if (resBanners.data) setBannerList(resBanners.data);
       if (resInq.inquiries) setInquiries(resInq.inquiries);
       if (resProd.products) setProducts(resProd.products);
-      if (resCar.applications) setCareers(resCar.applications);
-      if (resJobs.jobs) setJobs(resJobs.jobs);
-      if (resSet.settings) {
-        setSettings(resSet.settings);
-        setSettingsForm(resSet.settings);
-      }
     } catch (err) {
       console.error("Failed to load admin data:", err);
       showToastMsg("Error loading records", "error");
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  const selectPageForBuilder = async (page) => {
+    setSelectedPage(page);
+    try {
+      const res = await fetch(`/api/website/menu/${page.slug}`);
+      const json = await res.json();
+      if (json.isSuccess && json.data) {
+        setPageSections(json.data.sections || []);
+      } else {
+        setPageSections([]);
+      }
+    } catch {
+      setPageSections([]);
     }
   };
 
@@ -155,7 +198,7 @@ export default function AdminPanel() {
         return;
       }
       setUser(data.user);
-      showToastMsg("Welcome back, Admin!");
+      showToastMsg("Welcome to Dynamic CMS & Page Builder!");
       loadAllData();
     } catch {
       setLoginError("Failed to connect to backend server");
@@ -169,132 +212,110 @@ export default function AdminPanel() {
       await fetch("/api/auth", { method: "DELETE" });
       setUser(null);
       showToastMsg("Logged out safely");
-    } catch (err) {
-      console.error("Logout error:", err);
-    }
+    } catch {}
   };
 
-  // Inquiry actions
-  const handleUpdateInquiryStatus = async (id, newStatus) => {
+  // ---------------- PAGE ACTIONS ----------------
+  const handleSavePage = async (e) => {
+    e.preventDefault();
     try {
-      const res = await fetch(`/api/inquiries/${id}`, {
-        method: "PATCH",
+      const res = await fetch("/api/page/create", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify(pageForm)
       });
-      if (res.ok) {
-        setInquiries(prev => prev.map(i => i.id === id ? { ...i, status: newStatus } : i));
-        if (selectedInquiry?.id === id) {
-          setSelectedInquiry(prev => ({ ...prev, status: newStatus }));
-        }
-        showToastMsg(`Status updated to ${newStatus.replace('_', ' ')}`);
+      const json = await res.json();
+      if (json.isSuccess) {
+        showToastMsg(`Page '${json.data.title}' created!`);
+        setPages(prev => [json.data, ...prev]);
+        setPageModalOpen(false);
+        selectPageForBuilder(json.data);
+      } else {
+        showToastMsg(json.message || "Failed to create page", "error");
       }
     } catch {
-      showToastMsg("Failed to update status", "error");
+      showToastMsg("Server error", "error");
     }
   };
 
-  const handleSaveInquiryNotes = async (id) => {
+  const handleDeletePage = async (id) => {
+    if (!confirm("Are you sure? This will delete the page and its sections.")) return;
     try {
-      const res = await fetch(`/api/inquiries/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: inquiryNote })
-      });
-      if (res.ok) {
-        setInquiries(prev => prev.map(i => i.id === id ? { ...i, notes: inquiryNote } : i));
-        if (selectedInquiry?.id === id) {
-          setSelectedInquiry(prev => ({ ...prev, notes: inquiryNote }));
-        }
-        showToastMsg("Notes saved");
-      }
-    } catch {
-      showToastMsg("Failed to save notes", "error");
-    }
-  };
-
-  const handleDeleteInquiry = async (id) => {
-    if (!confirm("Are you sure you want to delete this enquiry?")) return;
-    try {
-      const res = await fetch(`/api/inquiries/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setInquiries(prev => prev.filter(i => i.id !== id));
-        if (selectedInquiry?.id === id) setSelectedInquiry(null);
-        showToastMsg("Inquiry deleted");
+      const res = await fetch(`/api/page/${id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (json.isSuccess) {
+        showToastMsg("Page deleted");
+        setPages(prev => prev.filter(p => p._id !== id));
+        if (selectedPage?._id === id) setSelectedPage(null);
       }
     } catch {
       showToastMsg("Failed to delete", "error");
     }
   };
 
-  // Product Actions
-  const openNewProductModal = () => {
-    setEditingProduct(null);
-    setProductForm({
-      name: "",
-      category: "circular",
-      gsm: "160 - 220 GSM",
-      width: "60 inches",
-      composition: "100% Polyester",
-      applications: "Sportswear, Activewear, Athleisure",
-      description: "",
-      image: "/assets/images/products/circular/1.jpg",
-      status: "active"
+  // ---------------- SECTION ACTIONS ----------------
+  const openNewSectionModal = () => {
+    setEditingSection(null);
+    setSectionForm({
+      type: "cms",
+      cmsId: cmsList[0]?._id || "",
+      moduleId: moduleList[0]?._id || "",
+      title: "",
+      subtitle: "",
+      backgroundImage: "",
+      position: pageSections.length + 1,
+      isActive: true
     });
-    setProductModalOpen(true);
+    setSectionModalOpen(true);
   };
 
-  const openEditProductModal = (prod) => {
-    setEditingProduct(prod);
-    setProductForm({
-      name: prod.name,
-      category: prod.category,
-      gsm: prod.gsm,
-      width: prod.width,
-      composition: prod.composition,
-      applications: Array.isArray(prod.applications) ? prod.applications.join(", ") : prod.applications,
-      description: prod.description || "",
-      image: prod.image || "/assets/images/products/circular/1.jpg",
-      status: prod.status || "active"
-    });
-    setProductModalOpen(true);
-  };
-
-  const handleSaveProduct = async (e) => {
+  const handleSaveSection = async (e) => {
     e.preventDefault();
+    if (!selectedPage) {
+      showToastMsg("Select a page first", "error");
+      return;
+    }
+
     const payload = {
-      ...productForm,
-      applications: productForm.applications.split(",").map(s => s.trim()).filter(Boolean)
+      pageId: selectedPage._id,
+      type: sectionForm.type,
+      cmsId: sectionForm.type === "cms" ? sectionForm.cmsId : undefined,
+      moduleId: sectionForm.type === "module" ? sectionForm.moduleId : undefined,
+      title: sectionForm.title,
+      subtitle: sectionForm.subtitle,
+      backgroundImage: sectionForm.backgroundImage,
+      position: Number(sectionForm.position) || pageSections.length + 1,
+      isActive: sectionForm.isActive
     };
 
     try {
-      if (editingProduct) {
-        const res = await fetch(`/api/products/${editingProduct.id}`, {
-          method: "PATCH",
+      if (editingSection) {
+        const res = await fetch(`/api/page-section/${editingSection._id}`, {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
-        if (res.ok) {
-          setProducts(prev => prev.map(p => p.id === editingProduct.id ? data.product : p));
-          showToastMsg("Product updated! Live on website.");
-          setProductModalOpen(false);
+        const json = await res.json();
+        if (json.isSuccess) {
+          showToastMsg("Section updated live!");
+          setSectionModalOpen(false);
+          selectPageForBuilder(selectedPage);
         } else {
-          showToastMsg(data.error || "Update failed", "error");
+          showToastMsg(json.message || "Failed to update", "error");
         }
       } else {
-        const res = await fetch("/api/products", {
+        const res = await fetch("/api/page-section/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
-        if (res.ok) {
-          setProducts(prev => [data.product, ...prev]);
-          showToastMsg("New fabric published to live website!");
-          setProductModalOpen(false);
+        const json = await res.json();
+        if (json.isSuccess) {
+          showToastMsg("New section added to page!");
+          setSectionModalOpen(false);
+          selectPageForBuilder(selectedPage);
         } else {
-          showToastMsg(data.error || "Failed to create product", "error");
+          showToastMsg(json.message || "Failed to create section", "error");
         }
       }
     } catch {
@@ -302,176 +323,298 @@ export default function AdminPanel() {
     }
   };
 
-  const handleDeleteProduct = async (id) => {
-    if (!confirm("Are you sure you want to remove this fabric from catalog?")) return;
+  const handleDeleteSection = async (sectionId) => {
+    if (!confirm("Remove this section from page?")) return;
     try {
-      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setProducts(prev => prev.filter(p => p.id !== id));
-        showToastMsg("Fabric removed from catalog");
+      const res = await fetch(`/api/page-section/${sectionId}`, { method: "DELETE" });
+      const json = await res.json();
+      if (json.isSuccess) {
+        showToastMsg("Section deleted");
+        selectPageForBuilder(selectedPage);
       }
     } catch {
-      showToastMsg("Failed to delete", "error");
+      showToastMsg("Failed to delete section", "error");
     }
   };
 
-  // Career application actions
-  const handleUpdateCareerStatus = async (id, newStatus) => {
-    try {
-      const res = await fetch(`/api/careers/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus })
-      });
-      if (res.ok) {
-        setCareers(prev => prev.map(c => c.id === id ? { ...c, status: newStatus } : c));
-        showToastMsg(`Candidate status updated to ${newStatus.replace('_', ' ')}`);
-      }
-    } catch {
-      showToastMsg("Failed to update status", "error");
-    }
-  };
+  // Section Reordering (1-click Move Up / Move Down calling /api/page-section/reorder)
+  const handleMoveSection = async (index, direction) => {
+    if (!selectedPage || pageSections.length < 2) return;
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= pageSections.length) return;
 
-  const handleDeleteCareer = async (id) => {
-    if (!confirm("Delete this candidate application?")) return;
-    try {
-      const res = await fetch(`/api/careers/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setCareers(prev => prev.filter(c => c.id !== id));
-        showToastMsg("Application deleted");
-      }
-    } catch {
-      showToastMsg("Failed to delete", "error");
-    }
-  };
+    const newSections = [...pageSections];
+    const temp = newSections[index];
+    newSections[index] = newSections[targetIndex];
+    newSections[targetIndex] = temp;
 
-  // Job Opening Actions
-  const handleSaveJob = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingJob) {
-        const res = await fetch(`/api/jobs/${editingJob.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(jobForm)
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setJobs(prev => prev.map(j => j.id === editingJob.id ? data.job : j));
-          showToastMsg("Job vacancy updated live!");
-          setJobModalOpen(false);
-        }
-      } else {
-        const res = await fetch("/api/jobs", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(jobForm)
-        });
-        const data = await res.json();
-        if (res.ok) {
-          setJobs(prev => [data.job, ...prev]);
-          showToastMsg("New vacancy published to /careers page!");
-          setJobModalOpen(false);
-        }
-      }
-    } catch {
-      showToastMsg("Error saving job", "error");
-    }
-  };
+    // Build reorder payload
+    const sectionsPayload = newSections.map((sec, idx) => ({
+      sectionId: sec._id,
+      position: idx + 1
+    }));
 
-  const handleDeleteJob = async (id) => {
-    if (!confirm("Delete this job vacancy?")) return;
-    try {
-      const res = await fetch(`/api/jobs/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setJobs(prev => prev.filter(j => j.id !== id));
-        showToastMsg("Job opening removed");
-      }
-    } catch {
-      showToastMsg("Failed to delete", "error");
-    }
-  };
+    // Optimistically update UI
+    setPageSections(newSections.map((sec, idx) => ({ ...sec, position: idx + 1 })));
 
-  // Save Settings & CMS Content
-  const handleSaveSettings = async (e) => {
-    e.preventDefault();
     try {
-      const res = await fetch("/api/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settingsForm)
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSettings(data.settings);
-        showToastMsg("Wix CMS & Settings saved successfully!");
-      }
-    } catch {
-      showToastMsg("Error saving settings", "error");
-    }
-  };
-
-  // Change Password
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    if (pwdNew !== pwdConfirm) {
-      showToastMsg("New passwords do not match", "error");
-      return;
-    }
-    setPwdLoading(true);
-    try {
-      const res = await fetch("/api/auth", {
+      const res = await fetch("/api/page-section/reorder", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword: pwdCurrent, newPassword: pwdNew })
+        body: JSON.stringify({
+          pageId: selectedPage._id,
+          sections: sectionsPayload
+        })
       });
-      const data = await res.json();
-      if (res.ok) {
-        showToastMsg("Admin password updated!");
-        setPwdCurrent("");
-        setPwdNew("");
-        setPwdConfirm("");
+      const json = await res.json();
+      if (json.isSuccess) {
+        showToastMsg(`Section moved ${direction > 0 ? "down" : "up"}! Order saved.`);
       } else {
-        showToastMsg(data.error || "Failed to update password", "error");
+        showToastMsg(json.message || "Failed to reorder", "error");
+        selectPageForBuilder(selectedPage);
       }
     } catch {
-      showToastMsg("Server communication error", "error");
-    } finally {
-      setPwdLoading(false);
+      showToastMsg("Error reordering sections", "error");
+      selectPageForBuilder(selectedPage);
     }
   };
 
-  // Filtered queries
-  const filteredProducts = products.filter(p => {
-    const matchesCat = productCategoryFilter === "all" || p.category === productCategoryFilter;
-    const matchesSearch = !globalSearch || p.name.toLowerCase().includes(globalSearch.toLowerCase()) || p.composition.toLowerCase().includes(globalSearch.toLowerCase());
-    return matchesCat && matchesSearch;
-  });
+  // ---------------- MENU ACTIONS ----------------
+  const openNewMenuModal = (parentId = null) => {
+    setEditingMenu(null);
+    setMenuForm({
+      name: "",
+      slug: "",
+      type: "page",
+      pageId: pages[0]?._id || "",
+      url: "",
+      parentId: parentId || "",
+      position: 1,
+      isActive: true
+    });
+    setMenuModalOpen(true);
+  };
 
-  const filteredInquiries = inquiries.filter(i => {
-    const matchesStatus = inquiryStatusFilter === "all" || i.status === inquiryStatusFilter;
-    const q = (inquirySearch || globalSearch).toLowerCase();
-    const matchesSearch = !q ||
-      (i.name && i.name.toLowerCase().includes(q)) ||
-      (i.email && i.email.toLowerCase().includes(q)) ||
-      (i.phone && i.phone.includes(q)) ||
-      (i.inquiryType && i.inquiryType.toLowerCase().includes(q)) ||
-      (i.message && i.message.toLowerCase().includes(q));
-    return matchesStatus && matchesSearch;
-  });
+  const handleSaveMenu = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingMenu) {
+        const res = await fetch(`/api/menu/${editingMenu._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(menuForm)
+        });
+        const json = await res.json();
+        if (json.isSuccess) {
+          showToastMsg("Menu updated live!");
+          setMenuModalOpen(false);
+          loadAllData();
+        }
+      } else {
+        const res = await fetch("/api/menu/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(menuForm)
+        });
+        const json = await res.json();
+        if (json.isSuccess) {
+          showToastMsg("Menu created!");
+          setMenuModalOpen(false);
+          loadAllData();
+        } else {
+          showToastMsg(json.message || "Error creating menu", "error");
+        }
+      }
+    } catch {
+      showToastMsg("Server error", "error");
+    }
+  };
+
+  const handleDeleteMenu = async (id) => {
+    if (!confirm("Delete this menu? Child menus will also be removed.")) return;
+    try {
+      const res = await fetch(`/api/menu/${id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (json.isSuccess) {
+        showToastMsg("Menu removed");
+        loadAllData();
+      }
+    } catch {
+      showToastMsg("Failed to delete menu", "error");
+    }
+  };
+
+  // ---------------- CMS ACTIONS ----------------
+  const handleSaveCMS = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingCms) {
+        const res = await fetch(`/api/cms/${editingCms._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cmsForm)
+        });
+        const json = await res.json();
+        if (json.isSuccess) {
+          showToastMsg("CMS block updated! Automatically reflected on all pages.");
+          setCmsModalOpen(false);
+          loadAllData();
+        }
+      } else {
+        const res = await fetch("/api/cms/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cmsForm)
+        });
+        const json = await res.json();
+        if (json.isSuccess) {
+          showToastMsg("New reusable CMS block created!");
+          setCmsModalOpen(false);
+          loadAllData();
+        }
+      }
+    } catch {
+      showToastMsg("Error saving CMS", "error");
+    }
+  };
+
+  const handleDeleteCMS = async (id) => {
+    if (!confirm("Delete this CMS block?")) return;
+    try {
+      const res = await fetch(`/api/cms/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        showToastMsg("CMS block deleted");
+        loadAllData();
+      }
+    } catch {
+      showToastMsg("Error deleting CMS", "error");
+    }
+  };
+
+  // ---------------- MODULE ACTIONS ----------------
+  const handleSaveModule = async (e) => {
+    e.preventDefault();
+    let configObj = {};
+    try {
+      configObj = JSON.parse(moduleForm.configurationText || "{}");
+    } catch {
+      showToastMsg("Configuration must be valid JSON", "error");
+      return;
+    }
+
+    const payload = {
+      name: moduleForm.name,
+      slug: moduleForm.slug,
+      type: moduleForm.type,
+      title: moduleForm.title,
+      subtitle: moduleForm.subtitle,
+      configuration: configObj,
+      isActive: moduleForm.isActive
+    };
+
+    try {
+      if (editingModule) {
+        const res = await fetch(`/api/module/${editingModule._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.isSuccess) {
+          showToastMsg("Module updated!");
+          setModuleModalOpen(false);
+          loadAllData();
+        }
+      } else {
+        const res = await fetch("/api/module/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (json.isSuccess) {
+          showToastMsg("New module created!");
+          setModuleModalOpen(false);
+          loadAllData();
+        }
+      }
+    } catch {
+      showToastMsg("Error saving module", "error");
+    }
+  };
+
+  const handleDeleteModule = async (id) => {
+    if (!confirm("Delete this module?")) return;
+    try {
+      const res = await fetch(`/api/module/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        showToastMsg("Module deleted");
+        loadAllData();
+      }
+    } catch {
+      showToastMsg("Error deleting module", "error");
+    }
+  };
+
+  // ---------------- BANNER ACTIONS ----------------
+  const handleSaveBanner = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingBanner) {
+        const res = await fetch(`/api/banner/${editingBanner._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bannerForm)
+        });
+        const json = await res.json();
+        if (json.isSuccess) {
+          showToastMsg("Banner updated!");
+          setBannerModalOpen(false);
+          loadAllData();
+        }
+      } else {
+        const res = await fetch("/api/banner/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(bannerForm)
+        });
+        const json = await res.json();
+        if (json.isSuccess) {
+          showToastMsg("Banner published!");
+          setBannerModalOpen(false);
+          loadAllData();
+        }
+      }
+    } catch {
+      showToastMsg("Error saving banner", "error");
+    }
+  };
+
+  const handleDeleteBanner = async (id) => {
+    if (!confirm("Delete this banner?")) return;
+    try {
+      const res = await fetch(`/api/banner/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        showToastMsg("Banner deleted");
+        loadAllData();
+      }
+    } catch {
+      showToastMsg("Error deleting banner", "error");
+    }
+  };
 
   if (authLoading) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f172a", color: "#fff", fontFamily: "sans-serif" }}>
         <div style={{ textAlign: "center" }}>
-          <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: "32px", color: "#15933a", marginBottom: "16px" }}></i>
-          <p style={{ color: "#94a3b8" }}>Connecting to Krishna Fashion Admin Workspace...</p>
+          <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: "36px", color: "#15933a", marginBottom: "16px" }}></i>
+          <p style={{ color: "#94a3b8" }}>Loading Dynamic CMS Architecture Engine...</p>
         </div>
       </div>
     );
   }
 
-  // WIX-STYLE LOGIN SCREEN
+  // LOGIN SCREEN
   if (!user) {
     return (
       <div style={{ minHeight: "100vh", background: "radial-gradient(circle at 50% 20%, #1e293b 0%, #0f172a 100%)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", fontFamily: "'DM Sans', sans-serif" }}>
@@ -481,10 +624,10 @@ export default function AdminPanel() {
               <img src="/assets/images/krishna-fashion-logo.png" alt="Krishna Fashion" style={{ maxHeight: "48px", margin: "0 auto 16px auto", display: "block" }} />
             </Link>
             <div style={{ display: "inline-block", background: "rgba(21, 147, 58, 0.15)", color: "#22c55e", padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "700", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "10px" }}>
-              Enterprise CMS Workspace
+              Dynamic CMS & Page Builder
             </div>
-            <h1 style={{ fontSize: "22px", fontWeight: "700", color: "#f8fafc", margin: "0 0 6px 0" }}>Krishna Fashion Portal</h1>
-            <p style={{ fontSize: "13px", color: "#94a3b8", margin: 0 }}>Manage fabric catalogs, enquiries CRM, plant locations and live website content</p>
+            <h1 style={{ fontSize: "22px", fontWeight: "700", color: "#f8fafc", margin: "0 0 6px 0" }}>CMS Administration</h1>
+            <p style={{ fontSize: "13px", color: "#94a3b8", margin: 0 }}>Full Menu Tree, Reusable CMS, Modules & Section Reordering Engine</p>
           </div>
 
           {loginError && (
@@ -496,47 +639,35 @@ export default function AdminPanel() {
 
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: "16px" }}>
-              <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", fontWeight: "500", marginBottom: "6px" }}>Admin Email</label>
-              <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: "14px", top: "12px", color: "#64748b" }}><i className="fa-solid fa-envelope"></i></span>
-                <input
-                  type="email"
-                  required
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", color: "#fff", borderRadius: "8px", padding: "10px 14px 10px 38px", fontSize: "14px", outline: "none" }}
-                  placeholder="admin@krishnafashion.co"
-                />
-              </div>
+              <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", fontWeight: "500", marginBottom: "6px" }}>Email</label>
+              <input
+                type="email"
+                required
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", color: "#fff", borderRadius: "8px", padding: "10px 14px", fontSize: "14px", outline: "none" }}
+              />
             </div>
 
             <div style={{ marginBottom: "20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
                 <label style={{ fontSize: "13px", color: "#cbd5e1", fontWeight: "500" }}>Password</label>
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{ background: "none", border: "none", color: "#38bdf8", fontSize: "12px", cursor: "pointer", padding: 0 }}
-                >
+                <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ background: "none", border: "none", color: "#38bdf8", fontSize: "12px", cursor: "pointer", padding: 0 }}>
                   {showPassword ? "Hide" : "Show"}
                 </button>
               </div>
-              <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: "14px", top: "12px", color: "#64748b" }}><i className="fa-solid fa-lock"></i></span>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", color: "#fff", borderRadius: "8px", padding: "10px 14px 10px 38px", fontSize: "14px", outline: "none" }}
-                  placeholder="Enter password"
-                />
-              </div>
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", color: "#fff", borderRadius: "8px", padding: "10px 14px", fontSize: "14px", outline: "none" }}
+              />
             </div>
 
             <div style={{ background: "#0f172a", border: "1px dashed #334155", borderRadius: "8px", padding: "10px 14px", marginBottom: "22px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ fontSize: "12px", color: "#94a3b8" }}>
-                Default Login: <strong style={{ color: "#e2e8f0" }}>admin@krishnafashion.co</strong> / <strong style={{ color: "#e2e8f0" }}>admin123</strong>
+                Demo: <strong style={{ color: "#e2e8f0" }}>admin@krishnafashion.co</strong> / <strong style={{ color: "#e2e8f0" }}>admin123</strong>
               </div>
               <button
                 type="button"
@@ -553,27 +684,17 @@ export default function AdminPanel() {
             <button
               type="submit"
               disabled={loginSubmitting}
-              style={{ width: "100%", background: "#15933a", border: "none", color: "#fff", padding: "12px", borderRadius: "8px", fontSize: "15px", fontWeight: "600", cursor: "pointer", transition: "background 0.2s" }}
+              style={{ width: "100%", background: "#15933a", border: "none", color: "#fff", padding: "12px", borderRadius: "8px", fontSize: "15px", fontWeight: "600", cursor: "pointer" }}
             >
-              {loginSubmitting ? (
-                <span><i className="fa-solid fa-spinner fa-spin" style={{ marginRight: "8px" }}></i> Connecting...</span>
-              ) : (
-                "Open Admin Workspace"
-              )}
+              {loginSubmitting ? "Connecting..." : "Open CMS Workspace"}
             </button>
           </form>
-
-          <div style={{ textAlign: "center", marginTop: "22px" }}>
-            <Link href="/" style={{ color: "#94a3b8", fontSize: "13px", textDecoration: "none" }}>
-              ← View Public Website
-            </Link>
-          </div>
         </div>
       </div>
     );
   }
 
-  // WIX-STYLE DASHBOARD LAYOUT
+  // WIX-GRADE CMS WORKSPACE
   return (
     <div style={{ minHeight: "100vh", display: "flex", background: "#0b1320", color: "#e2e8f0", fontFamily: "'DM Sans', sans-serif" }}>
       {/* Toast Alert */}
@@ -599,7 +720,7 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* 1. WIX-STYLE LEFT SIDEBAR */}
+      {/* 1. WIX-STYLE SIDEBAR */}
       <aside style={{
         width: sidebarCollapsed ? "72px" : "260px",
         background: "#0f172a",
@@ -618,12 +739,12 @@ export default function AdminPanel() {
           {!sidebarCollapsed ? (
             <div style={{ display: "flex", alignItems: "center", gap: "10px", overflow: "hidden" }}>
               <div style={{ width: "36px", height: "36px", borderRadius: "8px", background: "#15933a", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: "800", fontSize: "16px", flexShrink: 0 }}>
-                KF
+                CMS
               </div>
               <div style={{ overflow: "hidden" }}>
-                <div style={{ fontSize: "14px", fontWeight: "700", color: "#f8fafc", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>Krishna Fashion</div>
+                <div style={{ fontSize: "14px", fontWeight: "700", color: "#f8fafc", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>Page Builder Engine</div>
                 <div style={{ fontSize: "11px", color: "#22c55e", display: "flex", alignItems: "center", gap: "4px" }}>
-                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e" }}></span> Live Backend
+                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e" }}></span> RESTful Backend
                 </div>
               </div>
             </div>
@@ -637,22 +758,21 @@ export default function AdminPanel() {
             type="button"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", padding: "4px" }}
-            title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             <i className={`fa-solid ${sidebarCollapsed ? "fa-angles-right" : "fa-angles-left"}`}></i>
           </button>
         </div>
 
-        {/* Sidebar Nav Items */}
+        {/* Navigation Items */}
         <div style={{ padding: "16px 8px", flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "4px" }}>
-          {/* Section: MAIN */}
-          {!sidebarCollapsed && <div style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", padding: "8px 12px 4px 12px", textTransform: "uppercase" }}>Core Workspace</div>}
+          {!sidebarCollapsed && <div style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", padding: "8px 12px 4px 12px", textTransform: "uppercase" }}>Dynamic Page Builder</div>}
 
           {[
-            { id: "overview", label: "Dashboard", icon: "fa-gauge-high" },
-            { id: "products", label: "Fabric Catalog", icon: "fa-layer-group", badge: products.length },
-            { id: "inquiries", label: "Enquiries & CRM", icon: "fa-inbox", badge: inquiries.filter(i => i.status === "new").length, badgeColor: "#059669" },
-            { id: "careers", label: "Careers & Jobs", icon: "fa-user-tie", badge: careers.filter(c => c.status === "under_review").length, badgeColor: "#7c3aed" }
+            { id: "page_builder", label: "Page Builder & Sections", icon: "fa-cubes", badge: pages.length },
+            { id: "menu_builder", label: "Menu & Submenu Tree", icon: "fa-sitemap", badge: menuTree.length },
+            { id: "cms_blocks", label: "Reusable CMS Content", icon: "fa-newspaper", badge: cmsList.length },
+            { id: "modules", label: "Dynamic Modules", icon: "fa-puzzle-piece", badge: moduleList.length },
+            { id: "banners", label: "Page Banners", icon: "fa-image", badge: bannerList.length }
           ].map(item => {
             const isActive = activeTab === item.id;
             return (
@@ -674,8 +794,7 @@ export default function AdminPanel() {
                   fontWeight: isActive ? "600" : "500",
                   fontSize: "13px",
                   width: "100%",
-                  textAlign: "left",
-                  transition: "all 0.15s"
+                  textAlign: "left"
                 }}
                 title={sidebarCollapsed ? item.label : ""}
               >
@@ -683,8 +802,8 @@ export default function AdminPanel() {
                   <i className={`fa-solid ${item.icon}`} style={{ color: isActive ? "#22c55e" : "#64748b", width: "16px", textAlign: "center" }}></i>
                   {!sidebarCollapsed && <span>{item.label}</span>}
                 </div>
-                {!sidebarCollapsed && item.badge !== undefined && Boolean(item.badge) && (
-                  <span style={{ background: item.badgeColor || "#334155", color: "#fff", fontSize: "11px", fontWeight: "700", padding: "1px 7px", borderRadius: "10px" }}>
+                {!sidebarCollapsed && item.badge !== undefined && (
+                  <span style={{ background: "#334155", color: "#fff", fontSize: "11px", fontWeight: "700", padding: "1px 7px", borderRadius: "10px" }}>
                     {item.badge}
                   </span>
                 )}
@@ -692,13 +811,12 @@ export default function AdminPanel() {
             );
           })}
 
-          {/* Section: SITE & SETTINGS */}
-          {!sidebarCollapsed && <div style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", padding: "16px 12px 4px 12px", textTransform: "uppercase" }}>Wix CMS & Settings</div>}
+          {!sidebarCollapsed && <div style={{ fontSize: "11px", fontWeight: "700", color: "#64748b", padding: "16px 12px 4px 12px", textTransform: "uppercase" }}>Textile Operations</div>}
 
           {[
-            { id: "plants", label: "Plants & Map Setup", icon: "fa-industry" },
-            { id: "site_cms", label: "Site Content CMS", icon: "fa-pen-to-square" },
-            { id: "security", label: "Admin & Security", icon: "fa-shield-halved" }
+            { id: "products", label: "Fabric Products", icon: "fa-layer-group", badge: products.length },
+            { id: "inquiries", label: "Enquiries & CRM", icon: "fa-inbox", badge: inquiries.filter(i => i.status === "new").length },
+            { id: "security", label: "Architecture & Export", icon: "fa-shield-halved" }
           ].map(item => {
             const isActive = activeTab === item.id;
             return (
@@ -709,7 +827,7 @@ export default function AdminPanel() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: sidebarCollapsed ? "center" : "flex-start",
+                  justifyContent: sidebarCollapsed ? "center" : "space-between",
                   gap: "12px",
                   padding: "10px 12px",
                   borderRadius: "8px",
@@ -724,14 +842,21 @@ export default function AdminPanel() {
                 }}
                 title={sidebarCollapsed ? item.label : ""}
               >
-                <i className={`fa-solid ${item.icon}`} style={{ color: isActive ? "#22c55e" : "#64748b", width: "16px", textAlign: "center" }}></i>
-                {!sidebarCollapsed && <span>{item.label}</span>}
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <i className={`fa-solid ${item.icon}`} style={{ color: isActive ? "#22c55e" : "#64748b", width: "16px", textAlign: "center" }}></i>
+                  {!sidebarCollapsed && <span>{item.label}</span>}
+                </div>
+                {!sidebarCollapsed && item.badge !== undefined && (
+                  <span style={{ background: "#334155", color: "#fff", fontSize: "11px", fontWeight: "700", padding: "1px 7px", borderRadius: "10px" }}>
+                    {item.badge}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Sidebar Footer User Card */}
+        {/* Sidebar Footer */}
         <div style={{ padding: "14px", borderTop: "1px solid #1e293b", background: "#0b1320" }}>
           {!sidebarCollapsed ? (
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -740,34 +865,26 @@ export default function AdminPanel() {
                   A
                 </div>
                 <div style={{ overflow: "hidden" }}>
-                  <div style={{ fontSize: "13px", fontWeight: "600", color: "#f8fafc", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>{user.name || "Admin"}</div>
-                  <div style={{ fontSize: "11px", color: "#64748b" }}>Superadmin</div>
+                  <div style={{ fontSize: "13px", fontWeight: "600", color: "#f8fafc", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>Super Administrator</div>
+                  <div style={{ fontSize: "11px", color: "#64748b" }}>JWT Authenticated</div>
                 </div>
               </div>
-              <button
-                onClick={handleLogout}
-                style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: "4px" }}
-                title="Logout"
-              >
+              <button onClick={handleLogout} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", padding: "4px" }}>
                 <i className="fa-solid fa-right-from-bracket"></i>
               </button>
             </div>
           ) : (
-            <button
-              onClick={handleLogout}
-              style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", width: "100%", textAlign: "center" }}
-              title="Logout"
-            >
+            <button onClick={handleLogout} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", width: "100%", textAlign: "center" }}>
               <i className="fa-solid fa-right-from-bracket"></i>
             </button>
           )}
         </div>
       </aside>
 
-      {/* 2. MAIN WORKSPACE VIEWPORT */}
+      {/* 2. MAIN VIEWPORT */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, overflowX: "hidden" }}>
         
-        {/* Wix-Style Top Utility Bar */}
+        {/* Top Header */}
         <header style={{
           height: "64px",
           background: "#0f172a",
@@ -780,40 +897,20 @@ export default function AdminPanel() {
           top: 0,
           zIndex: 40
         }}>
-          {/* Quick Search */}
-          <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: "1 1 360px", maxWidth: "460px" }}>
-            <div style={{ position: "relative", width: "100%" }}>
-              <i className="fa-solid fa-magnifying-glass" style={{ position: "absolute", left: "12px", top: "11px", color: "#64748b", fontSize: "13px" }}></i>
-              <input
-                type="text"
-                value={globalSearch}
-                onChange={(e) => setGlobalSearch(e.target.value)}
-                placeholder="Search fabrics, client enquiries, jobs..."
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  background: "#1e293b",
-                  border: "1px solid #334155",
-                  borderRadius: "8px",
-                  color: "#fff",
-                  padding: "8px 12px 8px 36px",
-                  fontSize: "13px",
-                  outline: "none"
-                }}
-              />
-            </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ fontSize: "14px", fontWeight: "700", color: "#f8fafc" }}>
+              Backend Architecture: Controller → Service → Model
+            </span>
           </div>
 
-          {/* Quick Header Actions */}
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <button
               onClick={loadAllData}
               disabled={loadingData}
               style={{ background: "#1e293b", border: "1px solid #334155", color: "#94a3b8", padding: "7px 12px", borderRadius: "6px", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
-              title="Refresh Data"
             >
               <i className={`fa-solid fa-rotate-right ${loadingData ? "fa-spin" : ""}`} style={{ color: "#38bdf8" }}></i>
-              <span>Sync</span>
+              <span>Refresh</span>
             </button>
 
             <a
@@ -825,881 +922,640 @@ export default function AdminPanel() {
               <span>Export Code (.ZIP)</span>
             </a>
 
-            <Link
-              href="/"
-              target="_blank"
-              style={{ background: "#15933a", color: "#fff", padding: "7px 14px", borderRadius: "6px", fontSize: "13px", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", fontWeight: "600" }}
-            >
-              <span>Live Website</span>
-              <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: "11px" }}></i>
-            </Link>
+            {selectedPage && (
+              <a
+                href={`/p/${selectedPage.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ background: "#15933a", color: "#fff", padding: "7px 14px", borderRadius: "6px", fontSize: "13px", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", fontWeight: "600" }}
+              >
+                <span>Live Preview Page</span>
+                <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: "11px" }}></i>
+              </a>
+            )}
           </div>
         </header>
 
-        {/* Dynamic Workspace Tab Content */}
+        {/* WORKSPACE CONTENT */}
         <main style={{ padding: "32px 28px", flex: 1, maxWidth: "1400px", width: "100%", boxSizing: "border-box", margin: "0 auto" }}>
           
-          {/* TAB 1: OVERVIEW */}
-          {activeTab === "overview" && (
+          {/* TAB: PAGE BUILDER & SECTIONS (THE CORE REQUIREMENT) */}
+          {activeTab === "page_builder" && (
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
                 <div>
-                  <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 6px 0" }}>Operations Dashboard</h2>
-                  <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Executive overview of Krishna Fashion textile manufacturing and customer leads</p>
+                  <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 4px 0" }}>Dynamic Page Builder</h2>
+                  <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Configure pages, add CMS or Module sections, and reorder positions live</p>
                 </div>
                 <div style={{ display: "flex", gap: "10px" }}>
                   <button
-                    onClick={openNewProductModal}
-                    style={{ background: "#15933a", color: "#fff", border: "none", padding: "10px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                    onClick={() => {
+                      setPageForm({ title: "", slug: "", description: "", metaTitle: "", metaDescription: "" });
+                      setPageModalOpen(true);
+                    }}
+                    style={{ background: "#1e293b", border: "1px solid #334155", color: "#38bdf8", padding: "9px 16px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
                   >
-                    <i className="fa-solid fa-plus"></i> Add New Fabric
+                    <i className="fa-solid fa-file-circle-plus"></i> Create New Page
                   </button>
-                  <a
-                    href="/api/inquiries?export=csv"
-                    download
-                    style={{ background: "#1e293b", color: "#38bdf8", border: "1px solid #334155", padding: "10px 16px", borderRadius: "8px", fontSize: "13px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px" }}
-                  >
-                    <i className="fa-solid fa-download"></i> Export Enquiries CSV
-                  </a>
-                </div>
-              </div>
-
-              {/* KPI Metrics */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px", marginBottom: "28px" }}>
-                <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "20px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <span style={{ fontSize: "13px", color: "#94a3b8", fontWeight: "500" }}>Total Customer Leads</span>
-                    <i className="fa-solid fa-inbox" style={{ color: "#22c55e", fontSize: "18px" }}></i>
-                  </div>
-                  <div style={{ fontSize: "30px", fontWeight: "800", color: "#f8fafc", marginBottom: "4px" }}>
-                    {inquiries.length}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#22c55e" }}>
-                    <strong>{inquiries.filter(i => i.status === "new").length} New Leads</strong> awaiting follow-up
-                  </div>
-                </div>
-
-                <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "20px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <span style={{ fontSize: "13px", color: "#94a3b8", fontWeight: "500" }}>Active Fabric Catalog</span>
-                    <i className="fa-solid fa-layer-group" style={{ color: "#38bdf8", fontSize: "18px" }}></i>
-                  </div>
-                  <div style={{ fontSize: "30px", fontWeight: "800", color: "#f8fafc", marginBottom: "4px" }}>
-                    {products.length}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#94a3b8" }}>
-                    {products.filter(p => p.category === "circular").length} Circular · {products.filter(p => p.category === "warp").length} Warp Knitted
-                  </div>
-                </div>
-
-                <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "20px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <span style={{ fontSize: "13px", color: "#94a3b8", fontWeight: "500" }}>Recruitment & HR</span>
-                    <i className="fa-solid fa-user-group" style={{ color: "#a855f7", fontSize: "18px" }}></i>
-                  </div>
-                  <div style={{ fontSize: "30px", fontWeight: "800", color: "#f8fafc", marginBottom: "4px" }}>
-                    {careers.length}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#a855f7" }}>
-                    {careers.filter(c => c.status === "under_review").length} Candidates under review · {jobs.length} Openings
-                  </div>
-                </div>
-
-                <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "20px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-                    <span style={{ fontSize: "13px", color: "#94a3b8", fontWeight: "500" }}>Manufacturing Capacity</span>
-                    <i className="fa-solid fa-industry" style={{ color: "#eab308", fontSize: "18px" }}></i>
-                  </div>
-                  <div style={{ fontSize: "30px", fontWeight: "800", color: "#f8fafc", marginBottom: "4px" }}>
-                    {settings?.dailyCapacity || "~70 MT"}
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#eab308" }}>
-                    {settings?.knittingMachines || "400+"} Knitting Machines across 2 Plants
-                  </div>
-                </div>
-              </div>
-
-              {/* Recent Customer Inquiries Preview */}
-              <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "24px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
-                  <div>
-                    <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#f8fafc", margin: 0 }}>Recent Customer Inquiries</h3>
-                    <p style={{ fontSize: "13px", color: "#94a3b8", margin: "4px 0 0 0" }}>Direct inquiries submitted through website forms</p>
-                  </div>
                   <button
-                    onClick={() => setActiveTab("inquiries")}
-                    style={{ background: "#0f172a", border: "1px solid #334155", color: "#38bdf8", padding: "6px 14px", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}
+                    onClick={openNewSectionModal}
+                    disabled={!selectedPage}
+                    style={{ background: "#15933a", color: "#fff", border: "none", padding: "9px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: selectedPage ? "pointer" : "not-allowed", display: "flex", alignItems: "center", gap: "8px" }}
                   >
-                    View All ({inquiries.length}) →
+                    <i className="fa-solid fa-plus"></i> Add Section to Page
                   </button>
                 </div>
-
-                {inquiries.slice(0, 5).length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>No customer enquiries yet.</div>
-                ) : (
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
-                      <thead>
-                        <tr style={{ borderBottom: "1px solid #334155", color: "#94a3b8", fontSize: "12px", textTransform: "uppercase" }}>
-                          <th style={{ padding: "10px 14px" }}>Client</th>
-                          <th style={{ padding: "10px 14px" }}>Inquiry Type</th>
-                          <th style={{ padding: "10px 14px" }}>Requirement</th>
-                          <th style={{ padding: "10px 14px" }}>Status</th>
-                          <th style={{ padding: "10px 14px", textAlign: "right" }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {inquiries.slice(0, 5).map(inq => (
-                          <tr key={inq.id} style={{ borderBottom: "1px solid #283548" }}>
-                            <td style={{ padding: "12px 14px" }}>
-                              <div style={{ fontWeight: "600", color: "#f1f5f9" }}>{inq.name}</div>
-                              <div style={{ fontSize: "12px", color: "#64748b" }}>{inq.phone || inq.email}</div>
-                            </td>
-                            <td style={{ padding: "12px 14px", color: "#cbd5e1" }}>
-                              <span style={{ background: "#0f172a", padding: "3px 8px", borderRadius: "4px", fontSize: "12px" }}>
-                                {inq.inquiryType}
-                              </span>
-                            </td>
-                            <td style={{ padding: "12px 14px", color: "#94a3b8", maxWidth: "340px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                              {inq.message}
-                            </td>
-                            <td style={{ padding: "12px 14px" }}>
-                              <span style={{
-                                padding: "3px 8px",
-                                borderRadius: "4px",
-                                fontSize: "11px",
-                                fontWeight: "700",
-                                textTransform: "uppercase",
-                                background: inq.status === "new" ? "#065f46" : inq.status === "in_progress" ? "#854d0e" : inq.status === "contacted" ? "#1e40af" : "#334155",
-                                color: "#fff"
-                              }}>
-                                {inq.status.replace("_", " ")}
-                              </span>
-                            </td>
-                            <td style={{ padding: "12px 14px", textAlign: "right" }}>
-                              <button
-                                onClick={() => {
-                                  setSelectedInquiry(inq);
-                                  setInquiryNote(inq.notes || "");
-                                }}
-                                style={{ background: "#15933a", color: "#fff", border: "none", padding: "6px 12px", borderRadius: "4px", fontSize: "12px", cursor: "pointer", fontWeight: "600" }}
-                              >
-                                View Details
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: PRODUCTS CATALOG */}
-          {activeTab === "products" && (
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
-                <div>
-                  <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 4px 0" }}>Fabric Catalog Manager</h2>
-                  <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Add and modify fabrics that dynamically appear on the public website</p>
-                </div>
-                <button
-                  onClick={openNewProductModal}
-                  style={{ background: "#15933a", color: "#fff", border: "none", padding: "10px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
-                >
-                  <i className="fa-solid fa-plus"></i> Add New Fabric
-                </button>
               </div>
 
-              {/* Filter Tabs */}
-              <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
-                {[
-                  { id: "all", label: `All Fabrics (${products.length})` },
-                  { id: "circular", label: `Circular Knitting (${products.filter(p => p.category === 'circular').length})` },
-                  { id: "warp", label: `Warp Knitting (${products.filter(p => p.category === 'warp').length})` }
-                ].map(tab => (
+              {/* Page Selector Tabs */}
+              <div style={{ display: "flex", gap: "8px", marginBottom: "24px", overflowX: "auto", paddingBottom: "6px" }}>
+                {pages.map(page => (
                   <button
-                    key={tab.id}
-                    onClick={() => setProductCategoryFilter(tab.id)}
+                    key={page._id}
+                    onClick={() => selectPageForBuilder(page)}
                     style={{
-                      background: productCategoryFilter === tab.id ? "#15933a" : "#1e293b",
-                      color: productCategoryFilter === tab.id ? "#fff" : "#94a3b8",
+                      background: selectedPage?._id === page._id ? "#15933a" : "#1e293b",
+                      color: selectedPage?._id === page._id ? "#fff" : "#94a3b8",
                       border: "1px solid",
-                      borderColor: productCategoryFilter === tab.id ? "#15933a" : "#334155",
-                      padding: "8px 14px",
-                      borderRadius: "6px",
+                      borderColor: selectedPage?._id === page._id ? "#15933a" : "#334155",
+                      padding: "8px 16px",
+                      borderRadius: "8px",
                       fontSize: "13px",
                       cursor: "pointer",
-                      fontWeight: productCategoryFilter === tab.id ? "600" : "400"
+                      fontWeight: selectedPage?._id === page._id ? "700" : "500",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      whiteSpace: "nowrap"
                     }}
                   >
-                    {tab.label}
+                    <i className="fa-regular fa-file"></i>
+                    <span>{page.title}</span>
+                    <span style={{ background: selectedPage?._id === page._id ? "rgba(0,0,0,0.2)" : "#0f172a", padding: "1px 6px", borderRadius: "10px", fontSize: "11px" }}>
+                      /{page.slug}
+                    </span>
                   </button>
                 ))}
               </div>
 
-              {/* Fabric Cards Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "20px" }}>
-                {filteredProducts.map(prod => (
-                  <div key={prod.id} style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-                    <div style={{ height: "180px", position: "relative", background: "#0f172a" }}>
-                      <img src={prod.image || "/assets/images/products/circular/1.jpg"} alt={prod.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                      <div style={{ position: "absolute", top: "10px", left: "10px", display: "flex", gap: "6px" }}>
-                        <span style={{ background: prod.category === "circular" ? "#15933a" : "#2563eb", color: "#fff", fontSize: "11px", fontWeight: "700", padding: "3px 8px", borderRadius: "4px", textTransform: "uppercase" }}>
-                          {prod.category === "circular" ? "Circular Knit" : "Warp Knit"}
-                        </span>
-                        <span style={{ background: prod.status === "active" ? "#065f46" : "#64748b", color: "#fff", fontSize: "11px", fontWeight: "600", padding: "3px 8px", borderRadius: "4px" }}>
-                          {prod.status}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ padding: "18px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              {/* Active Page Builder Viewport */}
+              {selectedPage && (
+                <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: "24px", alignItems: "start" }}>
+                  
+                  {/* Left Column: Page Metadata & SEO Card */}
+                  <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "12px", padding: "20px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
                       <div>
-                        <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#f8fafc", margin: "0 0 8px 0" }}>{prod.name}</h3>
-                        <p style={{ fontSize: "13px", color: "#94a3b8", margin: "0 0 12px 0", lineHeight: "1.4" }}>{prod.description}</p>
+                        <span style={{ fontSize: "11px", fontWeight: "700", color: "#22c55e", textTransform: "uppercase" }}>Active Page</span>
+                        <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#f8fafc", margin: "2px 0 0 0" }}>{selectedPage.title}</h3>
+                      </div>
+                      <a
+                        href={`/p/${selectedPage.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="View Live Page"
+                        style={{ color: "#38bdf8", fontSize: "14px" }}
+                      >
+                        <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                      </a>
+                    </div>
 
-                        <div style={{ background: "#0f172a", padding: "8px 10px", borderRadius: "6px", border: "1px solid #283548", marginBottom: "12px", fontSize: "12px" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                            <span style={{ color: "#64748b" }}>GSM:</span>
-                            <strong style={{ color: "#e2e8f0" }}>{prod.gsm}</strong>
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                            <span style={{ color: "#64748b" }}>Width:</span>
-                            <strong style={{ color: "#e2e8f0" }}>{prod.width}</strong>
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <span style={{ color: "#64748b" }}>Yarn:</span>
-                            <strong style={{ color: "#e2e8f0" }}>{prod.composition}</strong>
-                          </div>
-                        </div>
-
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "14px" }}>
-                          {(Array.isArray(prod.applications) ? prod.applications : [prod.applications]).map((app, idx) => (
-                            <span key={idx} style={{ background: "#0f172a", color: "#38bdf8", fontSize: "11px", padding: "2px 6px", borderRadius: "4px" }}>
-                              {app}
-                            </span>
-                          ))}
+                    <div style={{ fontSize: "13px", color: "#94a3b8", display: "flex", flexDirection: "column", gap: "10px" }}>
+                      <div>
+                        <strong style={{ color: "#cbd5e1" }}>URL Slug:</strong>
+                        <div style={{ background: "#0f172a", padding: "6px 10px", borderRadius: "6px", marginTop: "2px", color: "#38bdf8", fontFamily: "monospace" }}>
+                          /p/{selectedPage.slug}
                         </div>
                       </div>
-
-                      <div style={{ display: "flex", gap: "8px", borderTop: "1px solid #334155", paddingTop: "12px" }}>
-                        <button
-                          onClick={() => openEditProductModal(prod)}
-                          style={{ flex: 1, background: "#0f172a", border: "1px solid #334155", color: "#38bdf8", padding: "7px", borderRadius: "6px", fontSize: "13px", cursor: "pointer", fontWeight: "600" }}
-                        >
-                          <i className="fa-solid fa-pen-to-square" style={{ marginRight: "6px" }}></i> Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProduct(prod.id)}
-                          style={{ background: "#3f1a1a", border: "1px solid #7f1d1d", color: "#fca5a5", padding: "7px 12px", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}
-                        >
-                          <i className="fa-solid fa-trash-can"></i>
-                        </button>
+                      <div>
+                        <strong style={{ color: "#cbd5e1" }}>Meta Title:</strong>
+                        <div style={{ color: "#e2e8f0" }}>{selectedPage.metaTitle || "Default SEO Title"}</div>
+                      </div>
+                      <div>
+                        <strong style={{ color: "#cbd5e1" }}>Description:</strong>
+                        <div style={{ color: "#94a3b8" }}>{selectedPage.description || "N/A"}</div>
                       </div>
                     </div>
+
+                    <div style={{ marginTop: "20px", paddingTop: "14px", borderTop: "1px solid #334155" }}>
+                      <button
+                        onClick={() => handleDeletePage(selectedPage._id)}
+                        style={{ background: "#3f1a1a", border: "1px solid #7f1d1d", color: "#fca5a5", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", width: "100%" }}
+                      >
+                        Delete Page
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* TAB 3: INQUIRIES & CRM */}
-          {activeTab === "inquiries" && (
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
-                <div>
-                  <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 4px 0" }}>Enquiries CRM & Leads</h2>
-                  <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Review customer inquiries, send direct WhatsApp responses, and manage deals</p>
-                </div>
-                <a
-                  href="/api/inquiries?export=csv"
-                  download
-                  style={{ background: "#1e293b", color: "#38bdf8", border: "1px solid #334155", padding: "9px 16px", borderRadius: "8px", fontSize: "13px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px" }}
-                >
-                  <i className="fa-solid fa-file-csv"></i> Download CSV
-                </a>
-              </div>
+                  {/* Right Column: Ordered Page Sections Builder */}
+                  <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "12px", padding: "24px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                      <div>
+                        <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#f8fafc", margin: 0 }}>
+                          Page Sections ({pageSections.length})
+                        </h3>
+                        <p style={{ fontSize: "13px", color: "#94a3b8", margin: "4px 0 0 0" }}>
+                          Use the Up/Down arrows to reorder. Live API returns sections sorted by position.
+                        </p>
+                      </div>
+                      <button
+                        onClick={openNewSectionModal}
+                        style={{ background: "#15933a", color: "#fff", border: "none", padding: "7px 14px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                      >
+                        <i className="fa-solid fa-plus"></i> Add Section
+                      </button>
+                    </div>
 
-              {/* Status Filter Bar */}
-              <div style={{ display: "flex", gap: "8px", marginBottom: "20px", flexWrap: "wrap" }}>
-                {["all", "new", "in_progress", "contacted", "closed"].map(st => (
-                  <button
-                    key={st}
-                    onClick={() => setInquiryStatusFilter(st)}
-                    style={{
-                      background: inquiryStatusFilter === st ? "#15933a" : "#1e293b",
-                      color: inquiryStatusFilter === st ? "#fff" : "#94a3b8",
-                      border: "1px solid",
-                      borderColor: inquiryStatusFilter === st ? "#15933a" : "#334155",
-                      padding: "7px 14px",
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                      textTransform: "capitalize",
-                      fontWeight: inquiryStatusFilter === st ? "600" : "400"
-                    }}
-                  >
-                    {st.replace("_", " ")} ({st === "all" ? inquiries.length : inquiries.filter(i => i.status === st).length})
-                  </button>
-                ))}
-              </div>
-
-              {/* Table */}
-              <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", overflow: "hidden" }}>
-                {filteredInquiries.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "48px 20px", color: "#64748b" }}>
-                    <i className="fa-solid fa-inbox" style={{ fontSize: "36px", marginBottom: "12px", display: "block" }}></i>
-                    No enquiries match current filter.
-                  </div>
-                ) : (
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
-                      <thead>
-                        <tr style={{ background: "#0f172a", borderBottom: "1px solid #334155", color: "#94a3b8", fontSize: "12px", textTransform: "uppercase" }}>
-                          <th style={{ padding: "14px 16px" }}>Date</th>
-                          <th style={{ padding: "14px 16px" }}>Client</th>
-                          <th style={{ padding: "14px 16px" }}>Type</th>
-                          <th style={{ padding: "14px 16px" }}>Requirement Message</th>
-                          <th style={{ padding: "14px 16px" }}>Status</th>
-                          <th style={{ padding: "14px 16px", textAlign: "right" }}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredInquiries.map(inq => (
-                          <tr key={inq.id} style={{ borderBottom: "1px solid #283548" }}>
-                            <td style={{ padding: "14px 16px", color: "#64748b", whiteSpace: "nowrap" }}>
-                              {new Date(inq.createdAt).toLocaleDateString()}
-                            </td>
-                            <td style={{ padding: "14px 16px" }}>
-                              <div style={{ fontWeight: "600", color: "#f8fafc" }}>{inq.name}</div>
-                              <div style={{ fontSize: "12px", color: "#38bdf8" }}>{inq.email}</div>
-                              <div style={{ fontSize: "12px", color: "#94a3b8" }}>{inq.phone}</div>
-                            </td>
-                            <td style={{ padding: "14px 16px" }}>
-                              <span style={{ background: "#0f172a", color: "#e2e8f0", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", whiteSpace: "nowrap" }}>
-                                {inq.inquiryType}
-                              </span>
-                            </td>
-                            <td style={{ padding: "14px 16px", color: "#cbd5e1", maxWidth: "340px" }}>
-                              <div style={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                                {inq.message}
+                    {pageSections.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: "40px", border: "2px dashed #334155", borderRadius: "10px", color: "#64748b" }}>
+                        <i className="fa-solid fa-cubes" style={{ fontSize: "32px", marginBottom: "12px", display: "block" }}></i>
+                        No sections added to this page yet. Click "Add Section" to attach a CMS content block or dynamic Module!
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        {pageSections.map((sec, idx) => (
+                          <div
+                            key={sec._id}
+                            style={{
+                              background: "#0f172a",
+                              border: "1px solid #334155",
+                              borderRadius: "10px",
+                              padding: "16px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: "16px"
+                            }}
+                          >
+                            {/* Position & Order Buttons */}
+                            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                <button
+                                  type="button"
+                                  disabled={idx === 0}
+                                  onClick={() => handleMoveSection(idx, -1)}
+                                  title="Move Up"
+                                  style={{ background: "#1e293b", border: "1px solid #334155", color: idx === 0 ? "#475569" : "#38bdf8", padding: "4px 8px", borderRadius: "4px", cursor: idx === 0 ? "not-allowed" : "pointer", fontSize: "11px" }}
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={idx === pageSections.length - 1}
+                                  onClick={() => handleMoveSection(idx, 1)}
+                                  title="Move Down"
+                                  style={{ background: "#1e293b", border: "1px solid #334155", color: idx === pageSections.length - 1 ? "#475569" : "#38bdf8", padding: "4px 8px", borderRadius: "4px", cursor: idx === pageSections.length - 1 ? "not-allowed" : "pointer", fontSize: "11px" }}
+                                >
+                                  ▼
+                                </button>
                               </div>
-                            </td>
-                            <td style={{ padding: "14px 16px" }}>
-                              <select
-                                value={inq.status}
-                                onChange={(e) => handleUpdateInquiryStatus(inq.id, e.target.value)}
-                                style={{
-                                  background: inq.status === "new" ? "#065f46" : inq.status === "in_progress" ? "#854d0e" : inq.status === "contacted" ? "#1e40af" : "#334155",
+
+                              <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: "#1e293b", border: "1px solid #334155", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", fontSize: "13px", color: "#22c55e" }}>
+                                {sec.position || idx + 1}
+                              </div>
+                            </div>
+
+                            {/* Section Details */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                                <span style={{
+                                  background: sec.type === "cms" ? "#065f46" : "#1e40af",
                                   color: "#fff",
-                                  border: "none",
+                                  fontSize: "11px",
+                                  fontWeight: "700",
+                                  padding: "2px 8px",
                                   borderRadius: "4px",
-                                  padding: "4px 8px",
-                                  fontSize: "12px",
-                                  fontWeight: "600",
-                                  cursor: "pointer"
-                                }}
-                              >
-                                <option value="new">New</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="contacted">Contacted</option>
-                                <option value="closed">Closed</option>
-                              </select>
-                            </td>
-                            <td style={{ padding: "14px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
+                                  textTransform: "uppercase"
+                                }}>
+                                  {sec.type}
+                                </span>
+                                <h4 style={{ margin: 0, fontSize: "15px", fontWeight: "700", color: "#f8fafc" }}>
+                                  {sec.title || (sec.type === "cms" ? sec.cms?.title : sec.module?.title || sec.module?.name) || `Section ${idx + 1}`}
+                                </h4>
+                              </div>
+                              <div style={{ fontSize: "12px", color: "#94a3b8" }}>
+                                {sec.type === "cms" ? (
+                                  <span>Referencing CMS: <strong style={{ color: "#cbd5e1" }}>{sec.cms?.title || "CMS Block"}</strong></span>
+                                ) : (
+                                  <span>Referencing Module: <strong style={{ color: "#38bdf8" }}>{sec.module?.name || "Module"} ({sec.module?.type})</strong></span>
+                                )}
+                                {sec.subtitle && ` · Subtitle: "${sec.subtitle}"`}
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                               <button
                                 onClick={() => {
-                                  setSelectedInquiry(inq);
-                                  setInquiryNote(inq.notes || "");
+                                  setEditingSection(sec);
+                                  setSectionForm({
+                                    type: sec.type,
+                                    cmsId: sec.cms?._id || "",
+                                    moduleId: sec.module?._id || "",
+                                    title: sec.title || "",
+                                    subtitle: sec.subtitle || "",
+                                    backgroundImage: sec.backgroundImage || "",
+                                    position: sec.position,
+                                    isActive: true
+                                  });
+                                  setSectionModalOpen(true);
                                 }}
-                                title="View Details"
-                                style={{ background: "#0f172a", border: "1px solid #334155", color: "#38bdf8", padding: "6px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer", marginRight: "6px" }}
+                                style={{ background: "#1e293b", border: "1px solid #334155", color: "#38bdf8", padding: "6px 10px", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
                               >
-                                <i className="fa-solid fa-eye"></i>
+                                Edit
                               </button>
-                              {inq.phone && (
-                                <a
-                                  href={`https://wa.me/${inq.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hello ${inq.name}, Greetings from Krishna Fashion Surat. Regarding your inquiry...`)}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  title="Reply on WhatsApp"
-                                  style={{ background: "#065f46", color: "#6ee7b7", padding: "6px 10px", borderRadius: "4px", fontSize: "12px", textDecoration: "none", display: "inline-block", marginRight: "6px" }}
-                                >
-                                  <i className="fa-brands fa-whatsapp"></i>
-                                </a>
-                              )}
                               <button
-                                onClick={() => handleDeleteInquiry(inq.id)}
-                                title="Delete"
-                                style={{ background: "#3f1a1a", border: "1px solid #7f1d1d", color: "#fca5a5", padding: "6px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
+                                onClick={() => handleDeleteSection(sec._id)}
+                                style={{ background: "#3f1a1a", border: "1px solid #7f1d1d", color: "#fca5a5", padding: "6px 10px", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
                               >
                                 <i className="fa-solid fa-trash-can"></i>
                               </button>
-                            </td>
-                          </tr>
+                            </div>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: MENU & SUBMENU TREE BUILDER */}
+          {activeTab === "menu_builder" && (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+                <div>
+                  <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 4px 0" }}>Dynamic Menu & Submenu Tree</h2>
+                  <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Create nested multi-level navigation trees (Root Menus, Submenus, Page/Product/URL links)</p>
+                </div>
+                <button
+                  onClick={() => openNewMenuModal(null)}
+                  style={{ background: "#15933a", color: "#fff", border: "none", padding: "9px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <i className="fa-solid fa-plus"></i> Add Root Menu
+                </button>
+              </div>
+
+              <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "12px", padding: "24px" }}>
+                {menuTree.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "30px", color: "#64748b" }}>No menus created yet.</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {menuTree.map((menu, mIdx) => (
+                      <div key={menu._id} style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: "8px", padding: "16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ width: "24px", height: "24px", borderRadius: "4px", background: "#15933a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: "700" }}>
+                              {mIdx + 1}
+                            </span>
+                            <div>
+                              <strong style={{ fontSize: "15px", color: "#f8fafc" }}>{menu.name}</strong>
+                              <span style={{ fontSize: "12px", color: "#38bdf8", marginLeft: "10px" }}>
+                                [type: {menu.type} · slug: {menu.slug}]
+                              </span>
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <button
+                              onClick={() => openNewMenuModal(menu._id)}
+                              style={{ background: "#1e293b", border: "1px solid #334155", color: "#22c55e", padding: "5px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
+                            >
+                              + Add Submenu
+                            </button>
+                            <button
+                              onClick={() => handleDeleteMenu(menu._id)}
+                              style={{ background: "#3f1a1a", border: "1px solid #7f1d1d", color: "#fca5a5", padding: "5px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Submenu Children */}
+                        {menu.children && menu.children.length > 0 && (
+                          <div style={{ marginTop: "12px", paddingLeft: "32px", borderLeft: "2px solid #334155", display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {menu.children.map((sub, sIdx) => (
+                              <div key={sub._id} style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "6px", padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                <div>
+                                  <span style={{ color: "#e2e8f0", fontSize: "14px", fontWeight: "600" }}>↳ {sub.name}</span>
+                                  <span style={{ color: "#94a3b8", fontSize: "12px", marginLeft: "8px" }}>({sub.url || sub.slug})</span>
+                                </div>
+                                <div style={{ display: "flex", gap: "6px" }}>
+                                  <button
+                                    onClick={() => openNewMenuModal(sub._id)}
+                                    style={{ background: "#0f172a", border: "1px solid #334155", color: "#22c55e", padding: "3px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+                                  >
+                                    + Sub
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteMenu(sub._id)}
+                                    style={{ background: "#3f1a1a", border: "1px solid #7f1d1d", color: "#fca5a5", padding: "3px 8px", borderRadius: "4px", fontSize: "11px", cursor: "pointer" }}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* TAB 4: CAREERS & JOBS */}
-          {activeTab === "careers" && (
+          {/* TAB: REUSABLE CMS CONTENT */}
+          {activeTab === "cms_blocks" && (
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
                 <div>
-                  <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 4px 0" }}>Careers & Recruitment</h2>
-                  <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Candidate applications and job openings displayed on the public /careers page</p>
+                  <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 4px 0" }}>Reusable CMS Content Blocks</h2>
+                  <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Create content once and reuse it across multiple pages (Section 3 & 23 requirement)</p>
                 </div>
                 <button
                   onClick={() => {
-                    setEditingJob(null);
-                    setJobForm({
-                      title: "",
-                      department: "Production & Operations",
-                      location: "Surat",
-                      experience: "2-5 Years",
-                      type: "Full-Time",
-                      status: "active",
-                      description: ""
-                    });
-                    setJobModalOpen(true);
+                    setEditingCms(null);
+                    setCmsForm({ title: "", slug: "", description: "", content: "", image: "/assets/images/about-intro.jpg", isActive: true });
+                    setCmsModalOpen(true);
                   }}
-                  style={{ background: "#15933a", color: "#fff", border: "none", padding: "10px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                  style={{ background: "#15933a", color: "#fff", border: "none", padding: "9px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
                 >
-                  <i className="fa-solid fa-briefcase"></i> Post New Job Opening
+                  <i className="fa-solid fa-plus"></i> Create CMS Block
                 </button>
               </div>
 
-              {/* Candidate Submissions */}
-              <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "20px", marginBottom: "28px" }}>
-                <h3 style={{ fontSize: "17px", fontWeight: "700", color: "#f8fafc", margin: "0 0 16px 0" }}>Candidate Applications ({careers.length})</h3>
-                {careers.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: "24px", color: "#64748b" }}>No candidate applications received yet.</div>
-                ) : (
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
-                      <thead>
-                        <tr style={{ borderBottom: "1px solid #334155", color: "#94a3b8", fontSize: "12px", textTransform: "uppercase" }}>
-                          <th style={{ padding: "10px 14px" }}>Candidate</th>
-                          <th style={{ padding: "10px 14px" }}>Department</th>
-                          <th style={{ padding: "10px 14px" }}>Experience / Details</th>
-                          <th style={{ padding: "10px 14px" }}>Status</th>
-                          <th style={{ padding: "10px 14px", textAlign: "right" }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {careers.map(app => (
-                          <tr key={app.id} style={{ borderBottom: "1px solid #283548" }}>
-                            <td style={{ padding: "12px 14px" }}>
-                              <div style={{ fontWeight: "600", color: "#f1f5f9" }}>{app.name}</div>
-                              <div style={{ fontSize: "12px", color: "#38bdf8" }}>{app.email}</div>
-                              <div style={{ fontSize: "12px", color: "#94a3b8" }}>{app.phone}</div>
-                            </td>
-                            <td style={{ padding: "12px 14px" }}>
-                              <span style={{ background: "#0f172a", color: "#e2e8f0", padding: "3px 8px", borderRadius: "4px", fontSize: "12px" }}>
-                                {app.areaOfInterest}
-                              </span>
-                            </td>
-                            <td style={{ padding: "12px 14px", color: "#cbd5e1", maxWidth: "340px" }}>
-                              {app.message}
-                            </td>
-                            <td style={{ padding: "12px 14px" }}>
-                              <select
-                                value={app.status}
-                                onChange={(e) => handleUpdateCareerStatus(app.id, e.target.value)}
-                                style={{
-                                  background: app.status === "selected" ? "#065f46" : app.status === "interview_scheduled" ? "#854d0e" : app.status === "rejected" ? "#7f1d1d" : "#334155",
-                                  color: "#fff",
-                                  border: "none",
-                                  borderRadius: "4px",
-                                  padding: "4px 8px",
-                                  fontSize: "12px",
-                                  fontWeight: "600",
-                                  cursor: "pointer"
-                                }}
-                              >
-                                <option value="under_review">Under Review</option>
-                                <option value="interview_scheduled">Interview Scheduled</option>
-                                <option value="selected">Selected</option>
-                                <option value="rejected">Rejected</option>
-                              </select>
-                            </td>
-                            <td style={{ padding: "12px 14px", textAlign: "right" }}>
-                              {app.phone && (
-                                <a
-                                  href={`https://wa.me/${app.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hello ${app.name}, this is Krishna Fashion HR regarding your application...`)}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  style={{ background: "#065f46", color: "#6ee7b7", padding: "6px 10px", borderRadius: "4px", fontSize: "12px", textDecoration: "none", display: "inline-block", marginRight: "6px" }}
-                                >
-                                  <i className="fa-brands fa-whatsapp"></i>
-                                </a>
-                              )}
-                              <button
-                                onClick={() => handleDeleteCareer(app.id)}
-                                style={{ background: "#3f1a1a", border: "1px solid #7f1d1d", color: "#fca5a5", padding: "6px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
-                              >
-                                <i className="fa-solid fa-trash-can"></i>
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              {/* Active Open Positions */}
-              <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "20px" }}>
-                <h3 style={{ fontSize: "17px", fontWeight: "700", color: "#f8fafc", margin: "0 0 16px 0" }}>Live Job Openings on /careers ({jobs.length})</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
-                  {jobs.map(job => (
-                    <div key={job.id} style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: "8px", padding: "16px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "20px" }}>
+                {cmsList.map(cms => (
+                  <div key={cms._id} style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                    <div>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                        <h4 style={{ fontSize: "15px", fontWeight: "700", color: "#f8fafc", margin: 0 }}>{job.title}</h4>
-                        <span style={{ background: job.status === "active" ? "#065f46" : "#475569", color: "#fff", fontSize: "11px", padding: "2px 6px", borderRadius: "4px" }}>
-                          {job.status}
+                        <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#f8fafc", margin: 0 }}>{cms.title}</h3>
+                        <span style={{ background: "#065f46", color: "#fff", fontSize: "11px", padding: "2px 6px", borderRadius: "4px" }}>
+                          Active
                         </span>
                       </div>
-                      <div style={{ fontSize: "12px", color: "#38bdf8", marginBottom: "6px" }}>
-                        {job.department} · {job.location}
+                      <div style={{ fontSize: "12px", color: "#38bdf8", marginBottom: "10px" }}>
+                        slug: {cms.slug}
                       </div>
-                      <p style={{ fontSize: "13px", color: "#cbd5e1", margin: "0 0 14px 0", lineHeight: "1.4" }}>{job.description}</p>
-                      <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                      <p style={{ fontSize: "13px", color: "#94a3b8", lineHeight: "1.4", margin: "0 0 12px 0" }}>
+                        {cms.description}
+                      </p>
+                      {cms.image && (
+                        <div style={{ height: "120px", borderRadius: "8px", overflow: "hidden", marginBottom: "12px", background: "#0f172a" }}>
+                          <img src={cms.image} alt={cms.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", gap: "8px", borderTop: "1px solid #334155", paddingTop: "12px" }}>
+                      <button
+                        onClick={() => {
+                          setEditingCms(cms);
+                          setCmsForm({ ...cms });
+                          setCmsModalOpen(true);
+                        }}
+                        style={{ flex: 1, background: "#0f172a", border: "1px solid #334155", color: "#38bdf8", padding: "7px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: "600" }}
+                      >
+                        Edit Block
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCMS(cms._id)}
+                        style={{ background: "#3f1a1a", border: "1px solid #7f1d1d", color: "#fca5a5", padding: "7px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: MODULES */}
+          {activeTab === "modules" && (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+                <div>
+                  <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 4px 0" }}>Dynamic Modules</h2>
+                  <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Configure dynamic components (Banner, Product, Project, Testimonial, Contact Form)</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingModule(null);
+                    setModuleForm({ name: "", slug: "", type: "product", title: "", subtitle: "", configurationText: "{}", isActive: true });
+                    setModuleModalOpen(true);
+                  }}
+                  style={{ background: "#15933a", color: "#fff", border: "none", padding: "9px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <i className="fa-solid fa-plus"></i> Create Module
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "20px" }}>
+                {moduleList.map(mod => (
+                  <div key={mod._id} style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                        <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#f8fafc", margin: 0 }}>{mod.name}</h3>
+                        <span style={{ background: "#1e40af", color: "#fff", fontSize: "11px", padding: "2px 8px", borderRadius: "4px", textTransform: "uppercase" }}>
+                          {mod.type}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>
+                        <strong>Title:</strong> {mod.title || "N/A"}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#94a3b8", marginBottom: "12px" }}>
+                        slug: {mod.slug}
+                      </div>
+                      <div style={{ background: "#0f172a", padding: "10px", borderRadius: "6px", fontSize: "11px", color: "#64748b", fontFamily: "monospace", maxHeight: "100px", overflowY: "auto", marginBottom: "14px" }}>
+                        {JSON.stringify(mod.configuration, null, 2)}
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "8px", borderTop: "1px solid #334155", paddingTop: "12px" }}>
+                      <button
+                        onClick={() => {
+                          setEditingModule(mod);
+                          setModuleForm({
+                            ...mod,
+                            configurationText: JSON.stringify(mod.configuration || {}, null, 2)
+                          });
+                          setModuleModalOpen(true);
+                        }}
+                        style={{ flex: 1, background: "#0f172a", border: "1px solid #334155", color: "#38bdf8", padding: "7px", borderRadius: "6px", fontSize: "12px", cursor: "pointer", fontWeight: "600" }}
+                      >
+                        Configure
+                      </button>
+                      <button
+                        onClick={() => handleDeleteModule(mod._id)}
+                        style={{ background: "#3f1a1a", border: "1px solid #7f1d1d", color: "#fca5a5", padding: "7px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB: BANNERS */}
+          {activeTab === "banners" && (
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+                <div>
+                  <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 4px 0" }}>Page & Menu Banners</h2>
+                  <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Configure dynamic hero banners associated with specific menus and pages</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setEditingBanner(null);
+                    setBannerForm({ title: "", subtitle: "", menuId: "", pageId: pages[0]?._id || "", desktopImage: "/assets/images/video-bg.jpg", mobileImage: "", buttonText: "Explore", buttonUrl: "/about-us", position: 1, isActive: true });
+                    setBannerModalOpen(true);
+                  }}
+                  style={{ background: "#15933a", color: "#fff", border: "none", padding: "9px 18px", borderRadius: "8px", fontSize: "13px", fontWeight: "600", cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+                >
+                  <i className="fa-solid fa-plus"></i> Add Banner
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "20px" }}>
+                {bannerList.map(banner => (
+                  <div key={banner._id} style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "12px", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                    <div style={{ height: "160px", position: "relative", background: "#0f172a" }}>
+                      <img src={banner.desktopImage || "/assets/images/about-intro.jpg"} alt={banner.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                    <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                      <div>
+                        <h4 style={{ margin: "0 0 6px 0", fontSize: "16px", color: "#f8fafc", fontWeight: "700" }}>{banner.title}</h4>
+                        <p style={{ fontSize: "13px", color: "#94a3b8", margin: "0 0 10px 0" }}>{banner.subtitle}</p>
+                        <div style={{ fontSize: "12px", color: "#38bdf8" }}>
+                          CTA: "{banner.buttonText}" → {banner.buttonUrl}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", marginTop: "14px", borderTop: "1px solid #334155", paddingTop: "12px" }}>
                         <button
                           onClick={() => {
-                            setEditingJob(job);
-                            setJobForm({ ...job });
-                            setJobModalOpen(true);
+                            setEditingBanner(banner);
+                            setBannerForm({ ...banner });
+                            setBannerModalOpen(true);
                           }}
-                          style={{ background: "#1e293b", border: "1px solid #334155", color: "#38bdf8", padding: "5px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
+                          style={{ flex: 1, background: "#0f172a", border: "1px solid #334155", color: "#38bdf8", padding: "6px", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
                         >
                           Edit
                         </button>
                         <button
-                          onClick={() => handleDeleteJob(job.id)}
-                          style={{ background: "#3f1a1a", border: "1px solid #7f1d1d", color: "#fca5a5", padding: "5px 10px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
+                          onClick={() => handleDeleteBanner(banner._id)}
+                          style={{ background: "#3f1a1a", border: "1px solid #7f1d1d", color: "#fca5a5", padding: "6px 12px", borderRadius: "6px", fontSize: "12px", cursor: "pointer" }}
                         >
                           Delete
                         </button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
 
-          {/* TAB 5: PLANTS & MAP SETUP */}
-          {activeTab === "plants" && settingsForm && (
+          {/* TAB: FABRICS */}
+          {activeTab === "products" && (
             <div>
-              <div style={{ marginBottom: "20px" }}>
-                <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 4px 0" }}>Plants & Google Map Management</h2>
-                <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Configure the 3 physical premises that appear in the interactive Google Map on Contact Us</p>
+              <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", marginBottom: "16px" }}>Fabric Catalog Items</h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" }}>
+                {products.map(prod => (
+                  <div key={prod.id} style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "10px", padding: "16px" }}>
+                    <div style={{ height: "140px", borderRadius: "6px", overflow: "hidden", marginBottom: "10px" }}>
+                      <img src={prod.image || "/assets/images/products/circular/1.jpg"} alt={prod.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                    <h4 style={{ margin: "0 0 4px 0", fontSize: "15px", color: "#f8fafc" }}>{prod.name}</h4>
+                    <div style={{ fontSize: "12px", color: "#38bdf8", marginBottom: "4px" }}>{prod.gsm} · {prod.width}</div>
+                    <div style={{ fontSize: "12px", color: "#94a3b8" }}>{prod.composition}</div>
+                  </div>
+                ))}
               </div>
-
-              <form onSubmit={handleSaveSettings}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: "24px", marginBottom: "24px" }}>
-                  {/* Head Office Card */}
-                  <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                      <span style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#15933a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <i className="fa-solid fa-building"></i>
-                      </span>
-                      <h3 style={{ fontSize: "16px", fontWeight: "700", margin: 0, color: "#fff" }}>Surat Head Office (ICC)</h3>
-                    </div>
-
-                    <div style={{ marginBottom: "12px" }}>
-                      <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>Full Address</label>
-                      <textarea
-                        rows={3}
-                        value={settingsForm.office?.address || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, office: { ...settingsForm.office, address: e.target.value } })}
-                        style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px" }}
-                      />
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
-                      <div>
-                        <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>Phone 1 (Himanshu)</label>
-                        <input
-                          type="text"
-                          value={settingsForm.office?.phone1 || ""}
-                          onChange={(e) => setSettingsForm({ ...settingsForm, office: { ...settingsForm.office, phone1: e.target.value } })}
-                          style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px" }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>Phone 2 (Keshav)</label>
-                        <input
-                          type="text"
-                          value={settingsForm.office?.phone2 || ""}
-                          onChange={(e) => setSettingsForm({ ...settingsForm, office: { ...settingsForm.office, phone2: e.target.value } })}
-                          style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px" }}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>Official Email</label>
-                      <input
-                        type="email"
-                        value={settingsForm.office?.email || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, office: { ...settingsForm.office, email: e.target.value } })}
-                        style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Plant 01 Card */}
-                  <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                      <span style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#15933a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <i className="fa-solid fa-industry"></i>
-                      </span>
-                      <h3 style={{ fontSize: "16px", fontWeight: "700", margin: 0, color: "#fff" }}>Plant 01 (Circular Knitting)</h3>
-                    </div>
-
-                    <div style={{ marginBottom: "12px" }}>
-                      <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>Plant Name / Title</label>
-                      <input
-                        type="text"
-                        value={settingsForm.plant1?.title || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, plant1: { ...settingsForm.plant1, title: e.target.value } })}
-                        style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px" }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>Location Address</label>
-                      <textarea
-                        rows={4}
-                        value={settingsForm.plant1?.address || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, plant1: { ...settingsForm.plant1, address: e.target.value } })}
-                        style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px" }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Plant 02 Card */}
-                  <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px" }}>
-                      <span style={{ width: "32px", height: "32px", borderRadius: "8px", background: "#2563eb", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <i className="fa-solid fa-industry"></i>
-                      </span>
-                      <h3 style={{ fontSize: "16px", fontWeight: "700", margin: 0, color: "#fff" }}>Plant 02 (Warp Knitting)</h3>
-                    </div>
-
-                    <div style={{ marginBottom: "12px" }}>
-                      <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>Plant Name / Title</label>
-                      <input
-                        type="text"
-                        value={settingsForm.plant2?.title || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, plant2: { ...settingsForm.plant2, title: e.target.value } })}
-                        style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px" }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>Location Address</label>
-                      <textarea
-                        rows={4}
-                        value={settingsForm.plant2?.address || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, plant2: { ...settingsForm.plant2, address: e.target.value } })}
-                        style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px" }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  style={{ background: "#15933a", color: "#fff", border: "none", padding: "12px 24px", borderRadius: "8px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}
-                >
-                  Save Plant & Map Locations
-                </button>
-              </form>
             </div>
           )}
 
-          {/* TAB 6: SITE CMS & ANNOUNCEMENT */}
-          {activeTab === "site_cms" && settingsForm && (
+          {/* TAB: INQUIRIES */}
+          {activeTab === "inquiries" && (
             <div>
-              <div style={{ marginBottom: "20px" }}>
-                <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 4px 0" }}>Wix-Style Content Management (CMS)</h2>
-                <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Directly customize public site announcement, hero headlines and manufacturing capacity numbers</p>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: 0 }}>Customer Enquiries CRM</h2>
+                <a href="/api/inquiries?export=csv" download style={{ background: "#1e293b", border: "1px solid #334155", color: "#38bdf8", padding: "7px 14px", borderRadius: "6px", fontSize: "13px", textDecoration: "none" }}>
+                  Export CSV
+                </a>
               </div>
-
-              <form onSubmit={handleSaveSettings}>
-                <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "24px", marginBottom: "24px" }}>
-                  <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#fff", margin: "0 0 16px 0" }}>1. Manufacturing Scale Counters</h3>
-                  
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-                    <div>
-                      <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>Daily Knitting Capacity Metric</label>
-                      <input
-                        type="text"
-                        value={settingsForm.dailyCapacity || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, dailyCapacity: e.target.value })}
-                        placeholder="e.g. ~70 MT"
-                        style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "10px 12px", fontSize: "14px" }}
-                      />
-                      <span style={{ fontSize: "11px", color: "#64748b" }}>Live on homepage metrics bar</span>
-                    </div>
-
-                    <div>
-                      <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>Knitting Machines Count Metric</label>
-                      <input
-                        type="text"
-                        value={settingsForm.knittingMachines || ""}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, knittingMachines: e.target.value })}
-                        placeholder="e.g. 400+"
-                        style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "10px 12px", fontSize: "14px" }}
-                      />
-                      <span style={{ fontSize: "11px", color: "#64748b" }}>Live on homepage metrics bar</span>
-                    </div>
-                  </div>
-
-                  <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#fff", margin: "24px 0 16px 0" }}>2. Announcement Banner</h3>
-                  <div style={{ marginBottom: "16px" }}>
-                    <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>Top Announcement Text</label>
-                    <input
-                      type="text"
-                      value={settingsForm.announcement || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, announcement: e.target.value })}
-                      placeholder="e.g. Surat's Premier Knitted Fabric Manufacturer · ~70 MT Daily Capacity"
-                      style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "10px 12px", fontSize: "14px" }}
-                    />
-                  </div>
-
-                  <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#fff", margin: "24px 0 16px 0" }}>3. Homepage Headline & Copy</h3>
-                  <div style={{ marginBottom: "16px" }}>
-                    <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>Main Headline</label>
-                    <input
-                      type="text"
-                      value={settingsForm.homeHeadline || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, homeHeadline: e.target.value })}
-                      style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "10px 12px", fontSize: "14px" }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>Company Intro Paragraph</label>
-                    <textarea
-                      rows={4}
-                      value={settingsForm.homeSubhead || ""}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, homeSubhead: e.target.value })}
-                      style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "10px 12px", fontSize: "14px" }}
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  style={{ background: "#15933a", color: "#fff", border: "none", padding: "12px 24px", borderRadius: "8px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}
-                >
-                  Publish CMS Changes Live
-                </button>
-              </form>
+              <div style={{ background: "#1e293b", borderRadius: "10px", border: "1px solid #334155", overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "13px" }}>
+                  <thead>
+                    <tr style={{ background: "#0f172a", borderBottom: "1px solid #334155", color: "#94a3b8" }}>
+                      <th style={{ padding: "10px 14px" }}>Date</th>
+                      <th style={{ padding: "10px 14px" }}>Client</th>
+                      <th style={{ padding: "10px 14px" }}>Message</th>
+                      <th style={{ padding: "10px 14px" }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inquiries.map(inq => (
+                      <tr key={inq.id} style={{ borderBottom: "1px solid #283548" }}>
+                        <td style={{ padding: "10px 14px", color: "#64748b" }}>{new Date(inq.createdAt).toLocaleDateString()}</td>
+                        <td style={{ padding: "10px 14px" }}>
+                          <strong style={{ color: "#f8fafc" }}>{inq.name}</strong>
+                          <div style={{ fontSize: "12px", color: "#38bdf8" }}>{inq.phone}</div>
+                        </td>
+                        <td style={{ padding: "10px 14px", color: "#cbd5e1" }}>{inq.message}</td>
+                        <td style={{ padding: "10px 14px" }}>
+                          <span style={{ background: inq.status === "new" ? "#065f46" : "#334155", color: "#fff", padding: "2px 6px", borderRadius: "4px", fontSize: "11px" }}>
+                            {inq.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
-          {/* TAB 7: ADMIN & SECURITY */}
+          {/* TAB: ARCHITECTURE & SECURITY */}
           {activeTab === "security" && (
             <div>
-              <div style={{ marginBottom: "20px" }}>
-                <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", margin: "0 0 4px 0" }}>Admin Account & System Diagnostic</h2>
-                <p style={{ fontSize: "14px", color: "#94a3b8", margin: 0 }}>Change authentication credentials and monitor JavaScript backend status</p>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "24px" }}>
-                {/* Change Password Card */}
-                <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "24px" }}>
-                  <h3 style={{ fontSize: "17px", fontWeight: "700", color: "#fff", margin: "0 0 16px 0" }}>Change Admin Password</h3>
-                  <form onSubmit={handleChangePassword}>
-                    <div style={{ marginBottom: "14px" }}>
-                      <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>Current Password</label>
-                      <input
-                        type="password"
-                        required
-                        value={pwdCurrent}
-                        onChange={(e) => setPwdCurrent(e.target.value)}
-                        style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "10px 12px", fontSize: "14px" }}
-                      />
-                    </div>
-                    <div style={{ marginBottom: "14px" }}>
-                      <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>New Password</label>
-                      <input
-                        type="password"
-                        required
-                        minLength={6}
-                        value={pwdNew}
-                        onChange={(e) => setPwdNew(e.target.value)}
-                        style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "10px 12px", fontSize: "14px" }}
-                      />
-                    </div>
-                    <div style={{ marginBottom: "20px" }}>
-                      <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>Confirm New Password</label>
-                      <input
-                        type="password"
-                        required
-                        minLength={6}
-                        value={pwdConfirm}
-                        onChange={(e) => setPwdConfirm(e.target.value)}
-                        style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "10px 12px", fontSize: "14px" }}
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={pwdLoading}
-                      style={{ background: "#2563eb", color: "#fff", border: "none", padding: "10px 18px", borderRadius: "6px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}
-                    >
-                      {pwdLoading ? "Updating..." : "Update Password"}
-                    </button>
-                  </form>
+              <h2 style={{ fontSize: "24px", fontWeight: "700", color: "#f8fafc", marginBottom: "16px" }}>Dynamic CMS Architecture Status</h2>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "20px" }}>
+                <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "12px", padding: "20px" }}>
+                  <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#fff", margin: "0 0 14px 0" }}>RESTful API Endpoints</h3>
+                  <div style={{ fontSize: "12px", color: "#94a3b8", display: "flex", flexDirection: "column", gap: "8px", fontFamily: "monospace" }}>
+                    <div><span style={{ color: "#22c55e" }}>GET</span> /api/website/menu/:slug</div>
+                    <div><span style={{ color: "#22c55e" }}>GET</span> /api/website/navigation</div>
+                    <div><span style={{ color: "#38bdf8" }}>POST</span> /api/page/create</div>
+                    <div><span style={{ color: "#38bdf8" }}>POST</span> /api/page-section/create</div>
+                    <div><span style={{ color: "#eab308" }}>PUT</span> /api/page-section/reorder</div>
+                    <div><span style={{ color: "#38bdf8" }}>POST</span> /api/menu/create</div>
+                    <div><span style={{ color: "#eab308" }}>PUT</span> /api/menu/reorder</div>
+                    <div><span style={{ color: "#38bdf8" }}>POST</span> /api/cms/create</div>
+                    <div><span style={{ color: "#38bdf8" }}>POST</span> /api/module/create</div>
+                    <div><span style={{ color: "#38bdf8" }}>POST</span> /api/banner/create</div>
+                  </div>
                 </div>
 
-                {/* Architecture Diagnostic Card */}
-                <div style={{ background: "#1e293b", borderRadius: "12px", border: "1px solid #334155", padding: "24px" }}>
-                  <h3 style={{ fontSize: "17px", fontWeight: "700", color: "#fff", margin: "0 0 16px 0" }}>System Architecture Status</h3>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "13px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", background: "#0f172a", borderRadius: "6px" }}>
-                      <span style={{ color: "#94a3b8" }}>Backend Runtime:</span>
-                      <strong style={{ color: "#22c55e" }}>Node.js Next.js 15 (JS API)</strong>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", background: "#0f172a", borderRadius: "6px" }}>
-                      <span style={{ color: "#94a3b8" }}>Database Engine:</span>
-                      <strong style={{ color: "#38bdf8" }}>Atomic JSON Store (Persistent)</strong>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", background: "#0f172a", borderRadius: "6px" }}>
-                      <span style={{ color: "#94a3b8" }}>API Authentication:</span>
-                      <strong style={{ color: "#e2e8f0" }}>HMAC-SHA256 Signed Tokens</strong>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 12px", background: "#0f172a", borderRadius: "6px" }}>
-                      <span style={{ color: "#94a3b8" }}>Google Maps:</span>
-                      <strong style={{ color: "#22c55e" }}>Active Multi-Location Embed</strong>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: "24px", paddingTop: "16px", borderTop: "1px solid #334155" }}>
-                    <a
-                      href="/api/export"
-                      download="krishna-fashion-complete-code.zip"
-                      style={{ display: "block", textAlign: "center", background: "#0f172a", border: "1px solid #38bdf8", color: "#38bdf8", padding: "10px", borderRadius: "6px", textDecoration: "none", fontWeight: "600", fontSize: "13px" }}
-                    >
-                      <i className="fa-solid fa-file-zipper" style={{ marginRight: "8px" }}></i>
-                      Download Complete Source Code (.ZIP)
-                    </a>
-                  </div>
+                <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: "12px", padding: "20px" }}>
+                  <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#fff", margin: "0 0 14px 0" }}>Source Code Export</h3>
+                  <p style={{ fontSize: "13px", color: "#94a3b8", lineHeight: "1.5", marginBottom: "16px" }}>
+                    Download the complete, self-contained project code including all Controllers, Services, Models, Validators, and frontend builders.
+                  </p>
+                  <a
+                    href="/api/export"
+                    download="krishna-fashion-complete-code.zip"
+                    style={{ display: "block", textAlign: "center", background: "#15933a", color: "#fff", padding: "10px", borderRadius: "6px", textDecoration: "none", fontWeight: "700", fontSize: "14px" }}
+                  >
+                    <i className="fa-solid fa-file-zipper" style={{ marginRight: "8px" }}></i>
+                    Download Complete Source Code (.ZIP)
+                  </a>
                 </div>
               </div>
             </div>
@@ -1708,251 +1564,182 @@ export default function AdminPanel() {
         </main>
       </div>
 
-      {/* DETAIL MODAL FOR CUSTOMER INQUIRY */}
-      {selectedInquiry && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
-          <div style={{ maxWidth: "600px", width: "100%", background: "#1e293b", borderRadius: "14px", border: "1px solid #334155", padding: "24px", maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-              <div>
-                <span style={{ fontSize: "11px", fontWeight: "700", color: "#38bdf8", textTransform: "uppercase" }}>Inquiry #{selectedInquiry.id}</span>
-                <h3 style={{ fontSize: "20px", fontWeight: "700", color: "#fff", margin: "2px 0 0 0" }}>{selectedInquiry.name}</h3>
+      {/* MODAL: CREATE PAGE */}
+      {pageModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
+          <div style={{ maxWidth: "500px", width: "100%", background: "#1e293b", borderRadius: "14px", border: "1px solid #334155", padding: "24px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#fff", margin: "0 0 16px 0" }}>Create New Website Page</h3>
+            <form onSubmit={handleSavePage}>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Page Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={pageForm.title}
+                  onChange={(e) => setPageForm({ ...pageForm, title: e.target.value })}
+                  placeholder="e.g. Sustainable Manufacturing"
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                />
               </div>
-              <button
-                onClick={() => setSelectedInquiry(null)}
-                style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "22px", cursor: "pointer" }}
-              >
-                ×
-              </button>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", background: "#0f172a", padding: "14px", borderRadius: "8px", marginBottom: "16px", fontSize: "13px" }}>
-              <div>
-                <span style={{ color: "#64748b", display: "block" }}>Email</span>
-                <a href={`mailto:${selectedInquiry.email}`} style={{ color: "#38bdf8", textDecoration: "none" }}>{selectedInquiry.email || "N/A"}</a>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>URL Slug (optional)</label>
+                <input
+                  type="text"
+                  value={pageForm.slug}
+                  onChange={(e) => setPageForm({ ...pageForm, slug: e.target.value })}
+                  placeholder="auto-generated from title"
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                />
               </div>
-              <div>
-                <span style={{ color: "#64748b", display: "block" }}>Phone</span>
-                <a href={`tel:${selectedInquiry.phone}`} style={{ color: "#38bdf8", textDecoration: "none" }}>{selectedInquiry.phone || "N/A"}</a>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Meta SEO Title</label>
+                <input
+                  type="text"
+                  value={pageForm.metaTitle}
+                  onChange={(e) => setPageForm({ ...pageForm, metaTitle: e.target.value })}
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                />
               </div>
-              <div>
-                <span style={{ color: "#64748b", display: "block" }}>Inquiry Type</span>
-                <strong style={{ color: "#e2e8f0" }}>{selectedInquiry.inquiryType}</strong>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Page Description</label>
+                <textarea
+                  rows={3}
+                  value={pageForm.description}
+                  onChange={(e) => setPageForm({ ...pageForm, description: e.target.value })}
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                />
               </div>
-              <div>
-                <span style={{ color: "#64748b", display: "block" }}>Received On</span>
-                <strong style={{ color: "#e2e8f0" }}>{new Date(selectedInquiry.createdAt).toLocaleString()}</strong>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                <button type="button" onClick={() => setPageModalOpen(false)} style={{ background: "#334155", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}>Cancel</button>
+                <button type="submit" style={{ background: "#15933a", color: "#fff", border: "none", padding: "8px 18px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>Create Page</button>
               </div>
-            </div>
-
-            <div style={{ marginBottom: "16px" }}>
-              <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>Customer Message</label>
-              <div style={{ background: "#0f172a", padding: "14px", borderRadius: "8px", border: "1px solid #334155", fontSize: "14px", color: "#e2e8f0", lineHeight: "1.5", whiteSpace: "pre-wrap" }}>
-                {selectedInquiry.message}
-              </div>
-            </div>
-
-            <div style={{ marginBottom: "16px" }}>
-              <label style={{ display: "block", fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>Internal Staff Note</label>
-              <textarea
-                rows={3}
-                value={inquiryNote}
-                onChange={(e) => setInquiryNote(e.target.value)}
-                placeholder="e.g. Quoted rate over call. Shared sample swatches..."
-                style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "8px", color: "#fff", padding: "10px", fontSize: "13px" }}
-              />
-              <button
-                type="button"
-                onClick={() => handleSaveInquiryNotes(selectedInquiry.id)}
-                style={{ marginTop: "6px", background: "#0f172a", border: "1px solid #334155", color: "#38bdf8", padding: "5px 12px", borderRadius: "4px", fontSize: "12px", cursor: "pointer" }}
-              >
-                Save Staff Note
-              </button>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #334155", paddingTop: "16px" }}>
-              <div style={{ display: "flex", gap: "8px" }}>
-                {selectedInquiry.phone && (
-                  <a
-                    href={`https://wa.me/${selectedInquiry.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hello ${selectedInquiry.name}, greetings from Krishna Fashion Surat...`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ background: "#065f46", color: "#6ee7b7", padding: "8px 14px", borderRadius: "6px", fontSize: "13px", textDecoration: "none", fontWeight: "600", display: "flex", alignItems: "center", gap: "6px" }}
-                  >
-                    <i className="fa-brands fa-whatsapp"></i> Chat WhatsApp
-                  </a>
-                )}
-                {selectedInquiry.email && (
-                  <a
-                    href={`mailto:${selectedInquiry.email}?subject=Krishna Fashion - Enquiry Response`}
-                    style={{ background: "#0f172a", border: "1px solid #334155", color: "#38bdf8", padding: "8px 14px", borderRadius: "6px", fontSize: "13px", textDecoration: "none", display: "flex", alignItems: "center", gap: "6px" }}
-                  >
-                    <i className="fa-solid fa-envelope"></i> Send Email
-                  </a>
-                )}
-              </div>
-              <button
-                onClick={() => setSelectedInquiry(null)}
-                style={{ background: "#334155", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}
-              >
-                Close
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* FABRIC CREATE / EDIT MODAL WITH LIVE PREVIEW */}
-      {productModalOpen && (
+      {/* MODAL: ADD / EDIT PAGE SECTION (THE PAGE BUILDER HEART) */}
+      {sectionModalOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
-          <div style={{ maxWidth: "640px", width: "100%", background: "#1e293b", borderRadius: "14px", border: "1px solid #334155", padding: "24px", maxHeight: "90vh", overflowY: "auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#fff", margin: 0 }}>
-                {editingProduct ? "Edit Fabric Product" : "Add New Fabric to Live Catalog"}
-              </h3>
-              <button
-                onClick={() => setProductModalOpen(false)}
-                style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "22px", cursor: "pointer" }}
-              >
-                ×
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveProduct}>
-              <div style={{ marginBottom: "12px" }}>
-                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Fabric Name / Construction *</label>
-                <input
-                  type="text"
-                  required
-                  value={productForm.name}
-                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                  placeholder="e.g. Polyester Micro Interlock Dry-Fit"
-                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
-                />
+          <div style={{ maxWidth: "560px", width: "100%", background: "#1e293b", borderRadius: "14px", border: "1px solid #334155", padding: "24px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#fff", margin: "0 0 16px 0" }}>
+              {editingSection ? "Edit Page Section" : `Add Section to '${selectedPage?.title}'`}
+            </h3>
+            <form onSubmit={handleSaveSection}>
+              {/* Type Switcher: CMS vs MODULE */}
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>Section Component Type *</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  <button
+                    type="button"
+                    onClick={() => setSectionForm({ ...sectionForm, type: "cms" })}
+                    style={{
+                      background: sectionForm.type === "cms" ? "#065f46" : "#0f172a",
+                      color: sectionForm.type === "cms" ? "#fff" : "#94a3b8",
+                      border: "1px solid",
+                      borderColor: sectionForm.type === "cms" ? "#22c55e" : "#334155",
+                      padding: "10px",
+                      borderRadius: "6px",
+                      fontWeight: "700",
+                      fontSize: "13px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <i className="fa-solid fa-newspaper" style={{ marginRight: "6px" }}></i>
+                    Reusable CMS Content
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSectionForm({ ...sectionForm, type: "module" })}
+                    style={{
+                      background: sectionForm.type === "module" ? "#1e40af" : "#0f172a",
+                      color: sectionForm.type === "module" ? "#fff" : "#94a3b8",
+                      border: "1px solid",
+                      borderColor: sectionForm.type === "module" ? "#3b82f6" : "#334155",
+                      padding: "10px",
+                      borderRadius: "6px",
+                      fontWeight: "700",
+                      fontSize: "13px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <i className="fa-solid fa-puzzle-piece" style={{ marginRight: "6px" }}></i>
+                    Dynamic Module
+                  </button>
+                </div>
               </div>
+
+              {/* Selector based on Type */}
+              {sectionForm.type === "cms" ? (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Select Reusable CMS Block *</label>
+                  <select
+                    required
+                    value={sectionForm.cmsId}
+                    onChange={(e) => setSectionForm({ ...sectionForm, cmsId: e.target.value })}
+                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "9px 12px", fontSize: "14px" }}
+                  >
+                    <option value="">-- Choose a CMS block --</option>
+                    {cmsList.map(cms => (
+                      <option key={cms._id} value={cms._id}>{cms.title} (slug: {cms.slug})</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Select Dynamic Module *</label>
+                  <select
+                    required
+                    value={sectionForm.moduleId}
+                    onChange={(e) => setSectionForm({ ...sectionForm, moduleId: e.target.value })}
+                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "9px 12px", fontSize: "14px" }}
+                  >
+                    <option value="">-- Choose a Module --</option>
+                    {moduleList.map(mod => (
+                      <option key={mod._id} value={mod._id}>{mod.name} (type: {mod.type})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Knitting Technology *</label>
-                  <select
-                    value={productForm.category}
-                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
-                  >
-                    <option value="circular">Circular Knitting</option>
-                    <option value="warp">Warp Knitting</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Publish Status</label>
-                  <select
-                    value={productForm.status}
-                    onChange={(e) => setProductForm({ ...productForm, status: e.target.value })}
-                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
-                  >
-                    <option value="active">Active (Visible on Website)</option>
-                    <option value="draft">Draft (Hidden)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>GSM Range</label>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Section Headline (optional)</label>
                   <input
                     type="text"
-                    value={productForm.gsm}
-                    onChange={(e) => setProductForm({ ...productForm, gsm: e.target.value })}
-                    placeholder="e.g. 140 - 220 GSM"
-                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                    value={sectionForm.title}
+                    onChange={(e) => setSectionForm({ ...sectionForm, title: e.target.value })}
+                    placeholder="Overrides block title"
+                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px" }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Width Specification</label>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Section Kicker / Subtitle</label>
                   <input
                     type="text"
-                    value={productForm.width}
-                    onChange={(e) => setProductForm({ ...productForm, width: e.target.value })}
-                    placeholder="e.g. 58 - 62 inches"
-                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                    value={sectionForm.subtitle}
+                    onChange={(e) => setSectionForm({ ...sectionForm, subtitle: e.target.value })}
+                    placeholder="e.g. INDUSTRIAL CAPACITY"
+                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px" }}
                   />
                 </div>
-              </div>
-
-              <div style={{ marginBottom: "12px" }}>
-                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Yarn Composition</label>
-                <input
-                  type="text"
-                  value={productForm.composition}
-                  onChange={(e) => setProductForm({ ...productForm, composition: e.target.value })}
-                  placeholder="e.g. 100% Micro Polyester or 92% Poly, 8% Spandex"
-                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
-                />
-              </div>
-
-              <div style={{ marginBottom: "12px" }}>
-                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>End Applications (comma-separated)</label>
-                <input
-                  type="text"
-                  value={productForm.applications}
-                  onChange={(e) => setProductForm({ ...productForm, applications: e.target.value })}
-                  placeholder="Sportswear, Activewear, Athleisure, Fashion"
-                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
-                />
-              </div>
-
-              {/* Swatch Selector */}
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "6px" }}>Select Fabric Thumbnail Image</label>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", marginBottom: "8px" }}>
-                  {presetSwatches.map((swatch, idx) => (
-                    <div
-                      key={idx}
-                      onClick={() => setProductForm({ ...productForm, image: swatch })}
-                      style={{
-                        height: "56px",
-                        borderRadius: "6px",
-                        overflow: "hidden",
-                        border: productForm.image === swatch ? "2px solid #22c55e" : "1px solid #334155",
-                        cursor: "pointer"
-                      }}
-                    >
-                      <img src={swatch} alt="Swatch" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    </div>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  value={productForm.image}
-                  onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
-                  placeholder="Or enter custom image URL"
-                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "6px 10px", fontSize: "12px" }}
-                />
               </div>
 
               <div style={{ marginBottom: "16px" }}>
-                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Short Technical Description</label>
-                <textarea
-                  rows={2}
-                  value={productForm.description}
-                  onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                  placeholder="Soft drape, moisture management, 4-way stretch..."
-                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Background Image URL (optional)</label>
+                <input
+                  type="text"
+                  value={sectionForm.backgroundImage}
+                  onChange={(e) => setSectionForm({ ...sectionForm, backgroundImage: e.target.value })}
+                  placeholder="/assets/images/about-intro.jpg"
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px" }}
                 />
               </div>
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", borderTop: "1px solid #334155", paddingTop: "14px" }}>
-                <button
-                  type="button"
-                  onClick={() => setProductModalOpen(false)}
-                  style={{ background: "#334155", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={{ background: "#15933a", color: "#fff", border: "none", padding: "8px 18px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
-                >
-                  {editingProduct ? "Save Changes" : "Publish to Live Website"}
+                <button type="button" onClick={() => setSectionModalOpen(false)} style={{ background: "#334155", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}>Cancel</button>
+                <button type="submit" style={{ background: "#15933a", color: "#fff", border: "none", padding: "8px 18px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
+                  {editingSection ? "Save Section Changes" : "Add Section to Page"}
                 </button>
               </div>
             </form>
@@ -1960,111 +1747,287 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* JOB OPENING MODAL */}
-      {jobModalOpen && (
+      {/* MODAL: ADD / EDIT MENU */}
+      {menuModalOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
-          <div style={{ maxWidth: "540px", width: "100%", background: "#1e293b", borderRadius: "14px", border: "1px solid #334155", padding: "24px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#fff", margin: 0 }}>
-                {editingJob ? "Edit Job Position" : "Create Job Vacancy"}
-              </h3>
-              <button
-                onClick={() => setJobModalOpen(false)}
-                style={{ background: "none", border: "none", color: "#94a3b8", fontSize: "22px", cursor: "pointer" }}
-              >
-                ×
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveJob}>
+          <div style={{ maxWidth: "500px", width: "100%", background: "#1e293b", borderRadius: "14px", border: "1px solid #334155", padding: "24px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#fff", margin: "0 0 16px 0" }}>
+              {editingMenu ? "Edit Menu Item" : "Create New Menu / Submenu"}
+            </h3>
+            <form onSubmit={handleSaveMenu}>
               <div style={{ marginBottom: "12px" }}>
-                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Job Title *</label>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Menu Label *</label>
                 <input
                   type="text"
                   required
-                  value={jobForm.title}
-                  onChange={(e) => setJobForm({ ...jobForm, title: e.target.value })}
-                  placeholder="e.g. Senior Circular Knitting Machine Technician"
+                  value={menuForm.name}
+                  onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })}
+                  placeholder="e.g. Products, About Us, Gold, Diamond"
                   style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
                 <div>
-                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Department</label>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Menu Type *</label>
                   <select
-                    value={jobForm.department}
-                    onChange={(e) => setJobForm({ ...jobForm, department: e.target.value })}
+                    value={menuForm.type}
+                    onChange={(e) => setMenuForm({ ...menuForm, type: e.target.value })}
                     style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
                   >
-                    <option value="Production & Operations">Production & Operations</option>
-                    <option value="Quality">Quality Assurance</option>
-                    <option value="Technical">Technical</option>
-                    <option value="Sales & Customer Relations">Sales & Customer Relations</option>
-                    <option value="Administration">Administration</option>
+                    <option value="page">Page Reference</option>
+                    <option value="custom">Custom URL</option>
+                    <option value="external">External Link</option>
+                    <option value="product">Product Listing</option>
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Status</label>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Parent Menu</label>
                   <select
-                    value={jobForm.status}
-                    onChange={(e) => setJobForm({ ...jobForm, status: e.target.value })}
+                    value={menuForm.parentId || ""}
+                    onChange={(e) => setMenuForm({ ...menuForm, parentId: e.target.value || null })}
                     style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
                   >
-                    <option value="active">Active (Visible)</option>
-                    <option value="closed">Closed</option>
+                    <option value="">None (Root Menu)</option>
+                    {menuTree.map(m => (
+                      <option key={m._id} value={m._id}>{m.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Location</label>
+              {menuForm.type === "page" ? (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Select Page *</label>
+                  <select
+                    required
+                    value={menuForm.pageId}
+                    onChange={(e) => setMenuForm({ ...menuForm, pageId: e.target.value })}
+                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                  >
+                    <option value="">-- Choose a Page --</option>
+                    {pages.map(p => (
+                      <option key={p._id} value={p._id}>{p.title} (/p/{p.slug})</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div style={{ marginBottom: "14px" }}>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Target URL *</label>
                   <input
                     type="text"
-                    value={jobForm.location}
-                    onChange={(e) => setJobForm({ ...jobForm, location: e.target.value })}
-                    placeholder="Plant 01 / Surat"
+                    value={menuForm.url}
+                    onChange={(e) => setMenuForm({ ...menuForm, url: e.target.value })}
+                    placeholder="/circular-knitting or https://example.com"
                     style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
                   />
                 </div>
-                <div>
-                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Experience</label>
-                  <input
-                    type="text"
-                    value={jobForm.experience}
-                    onChange={(e) => setJobForm({ ...jobForm, experience: e.target.value })}
-                    placeholder="e.g. 3-5 Years"
-                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
-                  />
-                </div>
-              </div>
+              )}
 
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                <button type="button" onClick={() => setMenuModalOpen(false)} style={{ background: "#334155", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}>Cancel</button>
+                <button type="submit" style={{ background: "#15933a", color: "#fff", border: "none", padding: "8px 18px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>Save Menu</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CREATE / EDIT CMS BLOCK */}
+      {cmsModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
+          <div style={{ maxWidth: "560px", width: "100%", background: "#1e293b", borderRadius: "14px", border: "1px solid #334155", padding: "24px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#fff", margin: "0 0 16px 0" }}>
+              {editingCms ? "Edit Reusable CMS Block" : "Create Reusable CMS Block"}
+            </h3>
+            <form onSubmit={handleSaveCMS}>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Block Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={cmsForm.title}
+                  onChange={(e) => setCmsForm({ ...cmsForm, title: e.target.value })}
+                  placeholder="e.g. About Our Infrastructure"
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                />
+              </div>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Short Description</label>
+                <input
+                  type="text"
+                  value={cmsForm.description}
+                  onChange={(e) => setCmsForm({ ...cmsForm, description: e.target.value })}
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                />
+              </div>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Image Asset URL</label>
+                <input
+                  type="text"
+                  value={cmsForm.image}
+                  onChange={(e) => setCmsForm({ ...cmsForm, image: e.target.value })}
+                  placeholder="/assets/images/about-intro.jpg"
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                />
+              </div>
               <div style={{ marginBottom: "16px" }}>
-                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Responsibilities</label>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>HTML / Rich Content</label>
                 <textarea
-                  rows={3}
-                  value={jobForm.description}
-                  onChange={(e) => setJobForm({ ...jobForm, description: e.target.value })}
-                  placeholder="Key responsibilities and qualifications required..."
+                  rows={4}
+                  value={cmsForm.content}
+                  onChange={(e) => setCmsForm({ ...cmsForm, content: e.target.value })}
+                  placeholder="<p>Enter formatted content...</p>"
                   style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
                 />
               </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                <button type="button" onClick={() => setCmsModalOpen(false)} style={{ background: "#334155", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}>Cancel</button>
+                <button type="submit" style={{ background: "#15933a", color: "#fff", border: "none", padding: "8px 18px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>Save CMS Block</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", borderTop: "1px solid #334155", paddingTop: "14px" }}>
-                <button
-                  type="button"
-                  onClick={() => setJobModalOpen(false)}
-                  style={{ background: "#334155", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}
+      {/* MODAL: MODULE CONFIG */}
+      {moduleModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
+          <div style={{ maxWidth: "540px", width: "100%", background: "#1e293b", borderRadius: "14px", border: "1px solid #334155", padding: "24px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#fff", margin: "0 0 16px 0" }}>
+              {editingModule ? "Configure Module" : "Create Dynamic Module"}
+            </h3>
+            <form onSubmit={handleSaveModule}>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Module Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={moduleForm.name}
+                  onChange={(e) => setModuleForm({ ...moduleForm, name: e.target.value })}
+                  placeholder="e.g. Featured Products Collection"
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Module Type *</label>
+                  <select
+                    value={moduleForm.type}
+                    onChange={(e) => setModuleForm({ ...moduleForm, type: e.target.value })}
+                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                  >
+                    <option value="product">Product Listing</option>
+                    <option value="project">Projects / Infrastructure</option>
+                    <option value="testimonial">Client Testimonials</option>
+                    <option value="contact">Contact Form</option>
+                    <option value="banner">Banner Slider</option>
+                    <option value="gallery">Gallery</option>
+                    <option value="custom">Custom JSON</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Display Headline</label>
+                  <input
+                    type="text"
+                    value={moduleForm.title}
+                    onChange={(e) => setModuleForm({ ...moduleForm, title: e.target.value })}
+                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                  />
+                </div>
+              </div>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Configuration (JSON)</label>
+                <textarea
+                  rows={4}
+                  value={moduleForm.configurationText}
+                  onChange={(e) => setModuleForm({ ...moduleForm, configurationText: e.target.value })}
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "13px", fontFamily: "monospace" }}
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                <button type="button" onClick={() => setModuleModalOpen(false)} style={{ background: "#334155", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}>Cancel</button>
+                <button type="submit" style={{ background: "#15933a", color: "#fff", border: "none", padding: "8px 18px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>Save Module</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: BANNER */}
+      {bannerModalOpen && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
+          <div style={{ maxWidth: "520px", width: "100%", background: "#1e293b", borderRadius: "14px", border: "1px solid #334155", padding: "24px" }}>
+            <h3 style={{ fontSize: "18px", fontWeight: "700", color: "#fff", margin: "0 0 16px 0" }}>
+              {editingBanner ? "Edit Page Banner" : "Create Page Banner"}
+            </h3>
+            <form onSubmit={handleSaveBanner}>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Assign to Page *</label>
+                <select
+                  required
+                  value={bannerForm.pageId}
+                  onChange={(e) => setBannerForm({ ...bannerForm, pageId: e.target.value })}
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={{ background: "#15933a", color: "#fff", border: "none", padding: "8px 18px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}
-                >
-                  {editingJob ? "Save Changes" : "Post Vacancy"}
-                </button>
+                  <option value="">-- Choose a Page --</option>
+                  {pages.map(p => (
+                    <option key={p._id} value={p._id}>{p.title}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Banner Main Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={bannerForm.title}
+                  onChange={(e) => setBannerForm({ ...bannerForm, title: e.target.value })}
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                />
+              </div>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Subtitle</label>
+                <input
+                  type="text"
+                  value={bannerForm.subtitle}
+                  onChange={(e) => setBannerForm({ ...bannerForm, subtitle: e.target.value })}
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                />
+              </div>
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Background Image URL *</label>
+                <input
+                  type="text"
+                  required
+                  value={bannerForm.desktopImage}
+                  onChange={(e) => setBannerForm({ ...bannerForm, desktopImage: e.target.value })}
+                  style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "16px" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Button Text</label>
+                  <input
+                    type="text"
+                    value={bannerForm.buttonText}
+                    onChange={(e) => setBannerForm({ ...bannerForm, buttonText: e.target.value })}
+                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "13px", color: "#cbd5e1", marginBottom: "4px" }}>Button URL</label>
+                  <input
+                    type="text"
+                    value={bannerForm.buttonUrl}
+                    onChange={(e) => setBannerForm({ ...bannerForm, buttonUrl: e.target.value })}
+                    style={{ width: "100%", boxSizing: "border-box", background: "#0f172a", border: "1px solid #334155", borderRadius: "6px", color: "#fff", padding: "8px 12px", fontSize: "14px" }}
+                  />
+                </div>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                <button type="button" onClick={() => setBannerModalOpen(false)} style={{ background: "#334155", color: "#fff", border: "none", padding: "8px 16px", borderRadius: "6px", fontSize: "13px", cursor: "pointer" }}>Cancel</button>
+                <button type="submit" style={{ background: "#15933a", color: "#fff", border: "none", padding: "8px 18px", borderRadius: "6px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>Save Banner</button>
               </div>
             </form>
           </div>

@@ -7,16 +7,28 @@ import { usePathname } from "next/navigation";
 export default function Header(){
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [productsOpen, setProductsOpen] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
+  const [dynamicMenus, setDynamicMenus] = useState([]);
 
   const closeMenu = () => {
     setMenuOpen(false);
-    setProductsOpen(false);
+    setOpenDropdownId(null);
   };
 
   useEffect(() => {
     closeMenu();
   }, [pathname]);
+
+  useEffect(() => {
+    fetch("/api/website/navigation")
+      .then(res => res.json())
+      .then(data => {
+        if (data.isSuccess && Array.isArray(data.data) && data.data.length > 0) {
+          setDynamicMenus(data.data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     document.body.classList.toggle("menu-open", menuOpen);
@@ -41,6 +53,19 @@ export default function Header(){
     return null;
   }
 
+  const resolveMenuHref = (menu) => {
+    if (menu.url) return menu.url;
+    if (menu.type === "page") {
+      // Map standard root pages to their clean static routes or /p/:slug
+      if (["about-us", "contact-us", "careers", "sustainability", "infrastructure", "management", "circular-knitting", "warp-knitting"].includes(menu.slug)) {
+        return `/${menu.slug}`;
+      }
+      if (menu.slug === "home") return "/";
+      return `/p/${menu.slug}`;
+    }
+    return `/p/${menu.slug}`;
+  };
+
   return (<>
     <header>
       <div className="container nav">
@@ -49,26 +74,64 @@ export default function Header(){
         </Link>
 
         <nav className={`menu${menuOpen ? " open" : ""}`} id="menu">
-          <Link href="/about-us" onClick={closeMenu}>About Us</Link>
-          <div className={`nav-dropdown${productsOpen ? " open" : ""}`}>
-            <button
-              className="nav-dropdown-toggle"
-              type="button"
-              aria-expanded={productsOpen}
-              onClick={() => setProductsOpen(v => !v)}
-            >
-              Products <span><i className="fa-solid fa-angle-down"></i></span>
-            </button>
-            <div className="nav-dropdown-menu">
-              <Link href="/circular-knitting" onClick={closeMenu}>Circular Knitting</Link>
-              <Link href="/warp-knitting" onClick={closeMenu}>Warp Knitting</Link>
-            </div>
-          </div>
-          <Link href="/management" onClick={closeMenu}>Management</Link>
-          <Link href="/infrastructure" onClick={closeMenu}>Infrastructure</Link>
-          <Link href="/sustainability" onClick={closeMenu}>Sustainability</Link>
-          <Link href="/careers" onClick={closeMenu}>Careers</Link>
-          <Link className="nav-cta" href="/contact-us" onClick={closeMenu}>Contact Us ↗</Link>
+          {dynamicMenus.length > 0 ? (
+            dynamicMenus.map((item) => {
+              const hasChildren = item.children && item.children.length > 0;
+              const isDropdownOpen = openDropdownId === item._id;
+
+              if (hasChildren) {
+                return (
+                  <div key={item._id} className={`nav-dropdown${isDropdownOpen ? " open" : ""}`}>
+                    <button
+                      className="nav-dropdown-toggle"
+                      type="button"
+                      aria-expanded={isDropdownOpen}
+                      onClick={() => setOpenDropdownId(isDropdownOpen ? null : item._id)}
+                    >
+                      {item.name} <span><i className="fa-solid fa-angle-down"></i></span>
+                    </button>
+                    <div className="nav-dropdown-menu">
+                      {item.children.map((sub) => (
+                        <Link key={sub._id} href={resolveMenuHref(sub)} onClick={closeMenu}>
+                          {sub.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <Link key={item._id} href={resolveMenuHref(item)} onClick={closeMenu}>
+                  {item.name}
+                </Link>
+              );
+            })
+          ) : (
+            // Fallback default navigation
+            <>
+              <Link href="/about-us" onClick={closeMenu}>About Us</Link>
+              <div className={`nav-dropdown${openDropdownId === "prod" ? " open" : ""}`}>
+                <button
+                  className="nav-dropdown-toggle"
+                  type="button"
+                  aria-expanded={openDropdownId === "prod"}
+                  onClick={() => setOpenDropdownId(openDropdownId === "prod" ? null : "prod")}
+                >
+                  Products <span><i className="fa-solid fa-angle-down"></i></span>
+                </button>
+                <div className="nav-dropdown-menu">
+                  <Link href="/circular-knitting" onClick={closeMenu}>Circular Knitting</Link>
+                  <Link href="/warp-knitting" onClick={closeMenu}>Warp Knitting</Link>
+                </div>
+              </div>
+              <Link href="/management" onClick={closeMenu}>Management</Link>
+              <Link href="/infrastructure" onClick={closeMenu}>Infrastructure</Link>
+              <Link href="/sustainability" onClick={closeMenu}>Sustainability</Link>
+              <Link href="/careers" onClick={closeMenu}>Careers</Link>
+              <Link className="nav-cta" href="/contact-us" onClick={closeMenu}>Contact Us ↗</Link>
+            </>
+          )}
         </nav>
 
         <button
@@ -80,7 +143,7 @@ export default function Header(){
           aria-controls="menu"
           onClick={() => {
             setMenuOpen(v => !v);
-            if (menuOpen) setProductsOpen(false);
+            if (menuOpen) setOpenDropdownId(null);
           }}
         >
           {menuOpen ? "×" : "☰"}
