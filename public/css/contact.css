@@ -1,0 +1,272 @@
+
+.tag {
+    display: block;
+    color: #299647;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    margin-bottom: 10px;
+}
+
+.contacts {
+    padding: 80px 0px;
+    background: var(--cream);
+}
+.section-head {
+    display: grid;
+    grid-template-columns: 1fr 500px;
+    gap: 70px;
+    align-items: end;
+    margin-bottom: 40px;
+}
+.section-head h2,
+.map-title h2 {
+    font: 700 clamp(40px, 5.5vw, 55px) / 1 "Manrope";
+    letter-spacing: -0.03em;
+    margin: 10px 0px 0px 0px;
+}
+.cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+.cards article {
+    position: relative;
+    min-height: 380px;
+    padding: 42px;
+    background-color: #fff;
+    border-top: 0;
+    border-right: 0;
+    border-radius: 30px;
+}
+.cards b {
+    color: #299647;
+    font-size: 12px;
+}
+.cards h3 {
+    font: 600 30px "Manrope";
+    margin: 0px 0 20px;
+}
+.cards p {
+    color: #68766e;
+    line-height: 1.8;
+}
+.map-link {
+    color: #299647;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+.quick-w {
+background: #122018;
+}
+.quick {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: #122018;
+    color: #fff;
+}
+.quick div {
+    padding: 30px 36px;
+    border-right: 1px solid #294035;
+}
+.quick small {
+    display: block;
+    color: #8fa196;
+    letter-spacing: 0.12em;
+    margin-bottom: 9px;
+}
+.quick a {
+    font: 600 21px "Manrope";
+}
+.map-title {
+    margin-bottom: 60px;
+}
+.map iframe {
+    width: 100%;
+    height: 650px;
+    border: 0;
+    display: block;
+    filter: grayscale(30%);
+}
+.enquiry {
+    padding: 90px 0;
+    background: var(--cream);
+    color: #fff;
+}
+.enquiry-grid {
+    display: grid;
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: 90px;
+}
+.enquiry h2 {
+    font: 700 clamp(40px, 5.8vw, 55px) / 0.96 "Manrope";
+    letter-spacing: -0.03em;
+    margin: 10px 0 35px;
+    color: #000;
+}
+.enquiry p {
+    color: #333;
+    line-height: 1.8;
+    max-width: 530px;
+}
+form label {
+    display: block;
+    color: #9bad9f;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+}
+input,
+select,
+textarea {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid #3a4e42;
+    color: #fff;
+    padding: 13px 0 17px;
+    font: 500 16px "DM Sans";
+    outline: none;
+}
+select {
+    color: #cbd5ce;
+}
+select option {
+    color: #111;
+}
+.two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+}
+textarea {
+    resize: vertical;
+}
+.enquiry button {
+    border: 0;
+    border-radius: 100px;
+    background: #299647;
+    color: #fff;
+    padding: 19px 29px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    cursor: pointer;
+}
+.enquiry button span {
+    font-size: 18px;
+    margin-left: 15px;
+}
+.end {
+    padding: 125px 0;
+    background: #299647;
+    color: #fff;
+}
+.end > div > span {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.17em;
+}
+.end h3 {
+    font: 600 clamp(50px, 6.6vw, 104px) / 1.02 "Manrope";
+    letter-spacing: -0.03em;
+    margin: 30px 0 0;
+}
+.end em {
+    color: #fff;
+}
+
+.enquiry form {
+    background-color: #fff;
+    padding: 40px;
+    border-radius: 20px;
+}
+
+.call-detail-box {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0px;
+    align-items: center;
+    padding-bottom: 30px;
+    gap: 10px;
+}
+.call-detail-box p{
+    padding: 0;
+    margin: 0;
+    line-height: 25px;
+}
+
+
+
+@media (max-width: 1000px) {
+    .container {
+        width: calc(100% - 44px);
+    }
+    .hero-grid,
+    .enquiry-grid,
+    .section-head {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    .cards {
+        grid-template-columns: 1fr;
+    }
+    .cards article,
+    .cards article:last-child {
+        border-right: 1px solid #d7e1d9;
+    }
+    .quick {
+        grid-template-columns: 1fr;
+    }
+    .quick div {
+        border-right: 0;
+        border-bottom: 1px solid #294035;
+    }
+    .map iframe {
+        height: 520px;
+    }
+}
+@media (max-width: 600px) {
+    .call-detail-box{
+    grid-template-columns: repeat(1, 1fr);
+}
+    .container {
+        width: calc(100% - 30px);
+    }
+    .hero {
+        padding: 80px 0 70px;
+    }
+    .hero h1 {
+        font-size: 58px;
+    }
+    .hero-copy p {
+        font-size: 16px;
+    }
+    .contacts,
+    .enquiry {
+        padding: 75px 0;
+    }
+
+    .cards article {
+        padding: 30px 24px;
+        min-height: auto;
+    }
+    .quick div {
+        padding: 24px;
+    }
+    .map iframe {
+        height: 430px;
+    }
+    .two {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    .end {
+        padding: 80px 0;
+    }
+    .end h3 {
+        font-size: 45px;
+    }
+}
+
